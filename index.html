@@ -1,0 +1,2906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFE4E9">
+<title>闲玩集游戏</title>
+
+<!-- PWA 配置 -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<style>
+  /* ================= 全局 ================= */
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html, body {
+    width: 100%; height: 100%;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    color: #5a4a52;
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  body {
+    background: linear-gradient(160deg, #fff5f8 0%, #ffe4ef 35%, #ffd6e7 65%, #ffc9de 100%);
+    background-attachment: fixed;
+  }
+
+  /* ================= 页面容器 ================= */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+    transition: opacity .3s ease, visibility .3s ease;
+  }
+  .screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .screen:not(#screen-pong):not(#screen-fish):not(#screen-bomber):not(#screen-miner):not(#screen-ms):not(#screen-sumo)::before,
+  .screen:not(#screen-pong):not(#screen-fish):not(#screen-bomber):not(#screen-miner):not(#screen-ms):not(#screen-sumo)::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+  .screen:not(#screen-pong):not(#screen-fish):not(#screen-bomber):not(#screen-miner):not(#screen-ms):not(#screen-sumo)::before {
+    width: 62vmin; height: 62vmin;
+    background: rgba(255, 190, 215, .5);
+    top: -14vmin; left: -14vmin;
+  }
+  .screen:not(#screen-pong):not(#screen-fish):not(#screen-bomber):not(#screen-miner):not(#screen-ms):not(#screen-sumo)::after {
+    width: 56vmin; height: 56vmin;
+    background: rgba(255, 224, 238, .7);
+    bottom: -16vmin; right: -12vmin;
+  }
+  .screen > * { position: relative; z-index: 1; }
+
+  /* ================= 首页 ================= */
+  #screen-home { gap: 30px; text-align: center; }
+  .site-title {
+    font-size: clamp(30px, 10vw, 62px);
+    font-weight: 800;
+    letter-spacing: .12em;
+    line-height: 1.25;
+    background: linear-gradient(135deg, #ff7eb3, #ff9a8b 45%, #b48cff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 6px 22px rgba(255, 140, 180, .25);
+    animation: floatUp 4s ease-in-out infinite;
+  }
+  @keyframes floatUp {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  .subtitle {
+    font-size: 12px;
+    letter-spacing: .38em;
+    color: #c89aae;
+    margin-top: -20px;
+    padding-left: .38em;
+  }
+  .author-note {
+    font-size: 12px;
+    color: #c89aae;
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* ================= 通用按钮 ================= */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    padding: 0 56px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: #fff;
+    background: linear-gradient(135deg, #ff8fb8, #ffa68d);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(255, 130, 170, .45);
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    touch-action: manipulation;
+  }
+  .btn:active {
+    transform: translateY(2px) scale(.97);
+    box-shadow: 0 4px 14px rgba(255, 130, 170, .4);
+  }
+  .btn-full { width: 100%; }
+  .btn-block { width: 100%; max-width: 420px; }
+  .btn-soft {
+    min-height: 52px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #b07a92;
+    background: rgba(255, 255, 255, .92);
+    border: 1.5px solid rgba(255, 170, 200, .65);
+    box-shadow: 0 4px 14px rgba(255, 150, 185, .15);
+  }
+  .btn-ghost {
+    min-height: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #b07a92;
+    background: rgba(255, 255, 255, .55);
+    border: 1px solid rgba(255, 170, 200, .55);
+    box-shadow: none;
+  }
+
+  .back-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 170, 200, .65);
+    background: rgba(255, 255, 255, .75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #b07a92;
+    font-size: 24px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 4px 14px rgba(255, 150, 185, .18);
+  }
+  .back-btn:active { transform: scale(.92); }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #a8537a;
+    letter-spacing: .06em;
+    text-align: center;
+  }
+
+  /* ================= 游戏列表页 ================= */
+  #screen-games {
+    justify-content: flex-start;
+    padding-top: calc(env(safe-area-inset-top) + 16px);
+    overflow-y: auto;
+  }
+  .top-bar-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    margin-bottom: 10px;
+  }
+  .game-notice {
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    padding: 0 10px;
+  }
+  .game-list {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 30px;
+  }
+  .game-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(255, 170, 200, .55);
+    border-radius: 20px;
+    box-shadow: 0 8px 22px rgba(255, 150, 185, .18);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .game-card:active {
+    transform: scale(.97);
+    box-shadow: 0 4px 12px rgba(255, 150, 185, .25);
+  }
+  .game-icon {
+    width: 58px; height: 58px;
+    border-radius: 17px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 31px;
+    background: linear-gradient(135deg, #ffd6e7, #ffeaf3);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9), 0 3px 10px rgba(255, 150, 185, .18);
+    flex: 0 0 auto;
+  }
+  .game-info { flex: 1 1 auto; min-width: 0; }
+  .game-title { font-size: 17px; font-weight: 700; color: #a8537a; }
+  .game-desc { font-size: 12.5px; color: #c08aa4; margin-top: 3px; }
+  .game-arrow { font-size: 24px; color: #d9a6bd; flex: 0 0 auto; line-height: 1; }
+
+  /* ================= 难度选择页 ================= */
+  #screen-difficulty, #screen-fish-diff, #screen-bomber-diff, #screen-miner-diff, #screen-ms-diff, #screen-sumo-diff {
+    justify-content: flex-start;
+    padding-top: calc(env(safe-area-inset-top) + 76px);
+    text-align: center;
+  }
+  .diff-icon {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 6px 14px rgba(255, 140, 180, .35));
+  }
+  .diff-tip {
+    font-size: 13.5px;
+    color: #c08aa4;
+    letter-spacing: .1em;
+    margin-top: 14px;
+  }
+  .diff-options {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    margin: 14px 0 20px;
+  }
+  .diff-btn {
+    flex: 1 1 0;
+    min-height: 54px;
+    border-radius: 16px;
+    border: 1.5px solid rgba(255, 170, 200, .65);
+    background: rgba(255, 255, 255, .62);
+    color: #b07a92;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s ease;
+  }
+  .diff-btn.active {
+    background: linear-gradient(135deg, #ff8fb8, #ffa68d);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(255, 130, 170, .38);
+    transform: translateY(-1px);
+  }
+  .diff-btn:active { transform: scale(.96); }
+
+  #btn-diff-start, #btn-fish-start, #btn-bomber-start, #btn-miner-start, #btn-ms-start, #btn-sumo-start { margin-bottom: 14px; }
+
+  /* ================= 游戏页通用 ================= */
+  #screen-pong, #screen-fish, #screen-bomber, #screen-miner, #screen-ms, #screen-sumo {
+    padding: 0;
+    justify-content: flex-start;
+    background: #758594;
+  }
+
+  .pong-topbar, .fish-topbar, .bomber-topbar, .miner-topbar, .ms-topbar, .sumo-topbar {
+    width: 100%;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: calc(env(safe-area-inset-top) + 12px) 14px 12px;
+    background: rgba(255, 255, 255, .1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, .15);
+    z-index: 3;
+  }
+  .pong-diff, .fish-diff, .bomber-diff, .miner-diff, .ms-diff, .sumo-diff {
+    width: 68px; flex: 0 0 auto;
+    font-size: 12px; color: #d0d8e0;
+    text-align: left; letter-spacing: .06em;
+  }
+  .pong-score, .fish-score, .bomber-score, .miner-score, .ms-score, .sumo-score { display: flex; align-items: center; gap: 12px; font-weight: 800; }
+  .score-num {
+    font-size: 26px; min-width: 30px;
+    text-align: center; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-num.player { color: #ff6b35; } 
+  .score-num.ai { color: #00b4ff; }     
+  .score-colon { font-size: 19px; color: #e0e6ed; }
+
+  .pong-exit, .fish-exit, .bomber-exit, .miner-exit, .ms-exit, .sumo-exit {
+    width: 58px; flex: 0 0 auto;
+    height: 36px;
+    border-radius: 6px;
+    border: 2px solid #fff;
+    background: #5a6773;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .pong-exit:active, .fish-exit:active, .bomber-exit:active, .miner-exit:active, .ms-exit:active, .sumo-exit:active { transform: scale(.94); }
+
+  /* 游戏区舞台通用 */
+  .pong-stage, .fish-stage, .bomber-stage, .miner-stage, .ms-stage, .sumo-stage {
+    flex: 1 1 auto; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0 0 0;
+  }
+  
+  /* 画布尺寸 */
+  #pong-canvas { flex: 0 0 auto; display: block; border-radius: 4px; background: #758594; touch-action: none; cursor: crosshair; }
+  #fish-canvas { flex: 1 1 auto; width: 100%; height: 100%; display: block; background: #006994; touch-action: none; }
+  #bomber-canvas { flex: 0 1 auto; max-width: 100%; max-height: 55vh; display: block; background: #2e8b57; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); touch-action: none; }
+  #miner-canvas { flex: 0 1 auto; width: 100%; max-width: 600px; max-height: 55vh; display: block; background: #4a3621; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); touch-action: none; }
+  #sumo-canvas { flex: 0 1 auto; max-width: 100%; max-height: 60vh; display: block; background: #d2b48c; border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); touch-action: none; }
+
+  /* 扫雷网格 */
+  #ms-grid {
+    display: grid; gap: 2px; background: #999; padding: 4px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .ms-cell {
+    width: 36px; height: 36px; background: #ccc; border: 2px solid; border-color: #fff #888 #888 #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; cursor: pointer; user-select: none; box-sizing: border-box;
+  }
+  .ms-cell.revealed { background: #e0e0e0; border: 1px solid #aaa; }
+  .ms-cell.mine { background: #ff4d4d; }
+  .ms-cell.ai-revealed { background: #cce5ff; border: 1px solid #99ccff; }
+  .ms-cell[data-num="1"] { color: #0000ff; }
+  .ms-cell[data-num="2"] { color: #008000; }
+  .ms-cell[data-num="3"] { color: #ff0000; }
+  .ms-cell[data-num="4"] { color: #000080; }
+  .ms-cell[data-num="5"] { color: #800000; }
+  .ms-cell[data-num="6"] { color: #008080; }
+  .ms-cell[data-num="7"] { color: #000000; }
+  .ms-cell[data-num="8"] { color: #808080; }
+
+  /* 虚拟按键区 */
+  .dpad-container {
+    width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 5px 20px calc(env(safe-area-inset-bottom) + 15px); gap: 20px; margin-top: 10px;
+  }
+  .dpad-group { display: flex; gap: 15px; }
+  .dpad-btn {
+    width: 65px; height: 65px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85); border: 3px solid #a8537a;
+    color: #a8537a; font-size: 30px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none; touch-action: none;
+    box-shadow: 0 6px 0 rgba(168, 83, 122, 0.5); transition: all 0.1s;
+  }
+  .hit-btn {
+    width: 85px; height: 85px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff8fb8, #ffa68d); border: 3px solid #fff;
+    color: #fff; font-size: 20px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none; touch-action: none;
+    box-shadow: 0 6px 0 rgba(220, 80, 120, 0.6); transition: all 0.1s;
+  }
+  .dpad-btn.active, .hit-btn.active {
+    transform: translateY(4px); box-shadow: 0 2px 0 rgba(168, 83, 122, 0.5); background: rgba(255, 210, 230, 0.95);
+  }
+  .hit-btn.active { background: #ffb6cf; }
+
+  /* 摇杆通用 */
+  .joystick-base {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255, 255, 255, 0.6);
+    position: relative; touch-action: none; box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+  }
+  .joystick-knob {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #ff8fb8, #ffa68d); border: 2px solid #fff;
+    position: absolute; left: 33px; top: 33px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    pointer-events: none;
+  }
+
+  /* ================= 弹层 ================= */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(30, 40, 50, .6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; padding: 22px; z-index: 60; animation: fadeIn .2s ease;
+  }
+  .overlay.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .overlay-card {
+    width: 100%; max-width: 320px; background: #fff; border-radius: 20px; padding: 26px 22px 22px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .3); display: flex; flex-direction: column; gap: 12px; text-align: center;
+    animation: popIn .28s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: scale(1); } }
+  .overlay-card h3 { font-size: 21px; color: #333; font-weight: 800; letter-spacing: .04em; }
+  .overlay-card p { font-size: 14px; color: #666; margin-bottom: 4px; line-height: 1.5; white-space: pre-wrap;}
+
+  /* 游戏内的弹窗保持原样 */
+  #overlay-pause .overlay-card, #overlay-result .overlay-card,
+  #overlay-fish-pause .overlay-card, #overlay-fish-result .overlay-card,
+  #overlay-bomber-pause .overlay-card, #overlay-bomber-result .overlay-card,
+  #overlay-miner-pause .overlay-card, #overlay-miner-result .overlay-card,
+  #overlay-ms-pause .overlay-card, #overlay-ms-result .overlay-card,
+  #overlay-sumo-pause .overlay-card, #overlay-sumo-result .overlay-card { background: #fff; }
+  
+  #overlay-pause .btn, #overlay-result .btn, #overlay-fish-pause .btn, #overlay-fish-result .btn,
+  #overlay-bomber-pause .btn, #overlay-bomber-result .btn, #overlay-miner-pause .btn, #overlay-miner-result .btn,
+  #overlay-ms-pause .btn, #overlay-ms-result .btn, #overlay-sumo-pause .btn, #overlay-sumo-result .btn { 
+    background: #ff6b35; box-shadow: 0 6px 16px rgba(255, 107, 53, .3); 
+  }
+  #overlay-pause .btn-ghost, #overlay-result .btn-ghost, #overlay-fish-pause .btn-ghost, #overlay-fish-result .btn-ghost,
+  #overlay-bomber-pause .btn-ghost, #overlay-bomber-result .btn-ghost, #overlay-miner-pause .btn-ghost, #overlay-miner-result .btn-ghost,
+  #overlay-ms-pause .btn-ghost, #overlay-ms-result .btn-ghost, #overlay-sumo-pause .btn-ghost, #overlay-sumo-result .btn-ghost { 
+    background: #f0f0f0; color: #555; border: none; box-shadow: none; 
+  }
+
+  /* ================= 粉色系列弹窗 (邀请弹窗) ================= */
+  #overlay-invite .overlay-card {
+    background: linear-gradient(160deg, #fff5f8 0%, #ffe4ef 100%); border: 1px solid rgba(255, 170, 200, .6); box-shadow: 0 24px 60px rgba(255, 140, 180, .3);
+  }
+  #overlay-invite h3 { color: #a8537a; }
+  #overlay-invite p { color: #c08aa4; }
+  #overlay-invite .btn { background: linear-gradient(135deg, #ff8fb8, #ffa68d); box-shadow: 0 6px 16px rgba(255, 130, 170, .4); color: #fff; }
+  #overlay-invite .btn-ghost { background: rgba(255, 255, 255, .8); color: #b07a92; border: 1px solid rgba(255, 170, 200, .65); box-shadow: 0 2px 8px rgba(255, 150, 185, .2); }
+
+  #invite-loading, #invite-success, #invite-failed { display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center; }
+  #invite-loading.hidden, #invite-success.hidden, #invite-failed.hidden { display: none !important; }
+
+  .loading-dots { margin-top: 10px; margin-bottom: 15px; font-size: 24px; color: #ff7eb3; font-weight: bold; letter-spacing: 4px; }
+  .loading-dots span { display: inline-block; animation: blink 1.4s infinite both; }
+  .loading-dots span:nth-child(2) { animation-delay: .2s; }
+  .loading-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0% { opacity: .2; } 20% { opacity: 1; } 100% { opacity: .2; } }
+</style>
+</head>
+<body>
+
+<!-- 1. 首页 -->
+<section id="screen-home" class="screen">
+  <h1 class="site-title">闲玩集游戏</h1>
+  <p class="subtitle">XIAN WAN JI</p>
+  <button class="btn" id="btn-start">开始游戏</button>
+  <button class="btn btn-ghost" id="btn-open-settings" style="margin-top: -15px; min-height: 40px; font-size: 14px; padding: 0 30px;">⚙️ 设置</button>
+  <p class="author-note">作者：小红书（6868972505）</p>
+</section>
+
+<!-- 2. 游戏列表页 -->
+<section id="screen-games" class="screen hidden">
+  <div class="top-bar-row">
+    <button class="back-btn" id="games-back" aria-label="返回">‹</button>
+    <h2 class="page-title" style="margin:0;">选择游戏</h2>
+    <div style="width:42px;"></div>
+  </div>
+  
+  <!-- 游戏列表顶部文字 -->
+  <div class="game-notice">
+    <div>作者：小红书（6868972505）</div>
+    <div>二传分享链接请标注作者署名耀衍的梨和网站名字闲玩集</div>
+  </div>
+
+  <div class="game-list">
+    <button class="game-card" id="card-pong">
+      <div class="game-icon">🏓</div>
+      <div class="game-info">
+        <div class="game-title">乒乓对战</div>
+        <div class="game-desc">先得 5 分者获胜 · 可选择难度</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+    <button class="game-card" id="card-fish">
+      <div class="game-icon">🐟</div>
+      <div class="game-info">
+        <div class="game-title">大鱼吃小鱼</div>
+        <div class="game-desc">全屏滑动 · 自动吃鱼 · 对手同屏</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+    <button class="game-card" id="card-bomber">
+      <div class="game-icon">💣</div>
+      <div class="game-info">
+        <div class="game-title">炸弹大乱斗 (2v2)</div>
+        <div class="game-desc">摇杆控制，超聪明避险 AI</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+    <button class="game-card" id="card-miner">
+      <div class="game-icon">💰</div>
+      <div class="game-info">
+        <div class="game-title">黄金矿工</div>
+        <div class="game-desc">经典 4399 玩法 · AI 自动抓取</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+    <button class="game-card" id="card-ms">
+      <div class="game-icon">💣</div>
+      <div class="game-info">
+        <div class="game-title">扫雷对决</div>
+        <div class="game-desc">回合制，谁踩雷谁就输！</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+    <button class="game-card" id="card-sumo">
+      <div class="game-icon">🤼</div>
+      <div class="game-info">
+        <div class="game-title">相扑对决</div>
+        <div class="game-desc">疯狂点击屏幕，把对方推出去！</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </button>
+  </div>
+</section>
+
+<!-- 3. 乒乓难度选择页 -->
+<section id="screen-difficulty" class="screen hidden">
+  <button class="back-btn" id="diff-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">🏓</div>
+  <h2 class="page-title">乒乓对战</h2>
+  <p class="diff-tip">选择难度</p>
+  <div class="diff-options" id="diff-options">
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">普通</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <button class="btn btn-block" id="btn-diff-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite">邀请对方玩</button>
+</section>
+
+<!-- 3.2 大鱼吃小鱼难度选择页 -->
+<section id="screen-fish-diff" class="screen hidden">
+  <button class="back-btn" id="fish-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">🐟</div>
+  <h2 class="page-title">大鱼吃小鱼</h2>
+  <p class="diff-tip">选择难度</p>
+  <div class="diff-options" id="fish-diff-options">
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">普通</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <button class="btn btn-block" id="btn-fish-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite-fish">邀请对方玩</button>
+</section>
+
+<!-- 3.3 炸弹游戏难度选择页 -->
+<section id="screen-bomber-diff" class="screen hidden">
+  <button class="back-btn" id="bomber-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">💣</div>
+  <h2 class="page-title">炸弹大乱斗</h2>
+  <p class="diff-tip">选择人机强度</p>
+  <div class="diff-options" id="bomber-diff-options">
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">普通</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <button class="btn btn-block" id="btn-bomber-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite-bomber">邀请对方玩</button>
+</section>
+
+<!-- 3.4 黄金矿工难度选择页 -->
+<section id="screen-miner-diff" class="screen hidden">
+  <button class="back-btn" id="miner-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">💰</div>
+  <h2 class="page-title">黄金矿工</h2>
+  <p class="diff-tip">选择关卡难度</p>
+  <div class="diff-options" id="miner-diff-options">
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">普通</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <button class="btn btn-block" id="btn-miner-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite-miner">邀请对方玩</button>
+</section>
+
+<!-- 3.5 扫雷难度选择页 -->
+<section id="screen-ms-diff" class="screen hidden">
+  <button class="back-btn" id="ms-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">💣</div>
+  <h2 class="page-title">扫雷对决</h2>
+  <p class="diff-tip">选择难度</p>
+  <div class="diff-options" id="ms-diff-options">
+    <button class="diff-btn" data-diff="easy">简单 (1雷)</button>
+    <button class="diff-btn active" data-diff="normal">普通 (2雷)</button>
+    <button class="diff-btn" data-diff="hard">困难 (3雷)</button>
+  </div>
+  <button class="btn btn-block" id="btn-ms-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite-ms">邀请对方玩</button>
+</section>
+
+<!-- 3.6 相扑难度选择页 -->
+<section id="screen-sumo-diff" class="screen hidden">
+  <button class="back-btn" id="sumo-back" aria-label="返回" style="position:fixed; top:calc(env(safe-area-inset-top) + 14px); left:16px;">‹</button>
+  <div class="diff-icon">🤼</div>
+  <h2 class="page-title">相扑对决</h2>
+  <p class="diff-tip">选择难度</p>
+  <div class="diff-options" id="sumo-diff-options">
+    <button class="diff-btn" data-diff="easy">简单</button>
+    <button class="diff-btn active" data-diff="normal">普通</button>
+    <button class="diff-btn" data-diff="hard">困难</button>
+  </div>
+  <button class="btn btn-block" id="btn-sumo-start">开始游戏</button>
+  <button class="btn btn-ghost btn-block" id="btn-invite-sumo">邀请对方玩</button>
+</section>
+
+<!-- 4. 乒乓对战页 -->
+<section id="screen-pong" class="screen hidden">
+  <div class="pong-topbar">
+    <span class="pong-diff" id="pong-diff">普通</span>
+    <div class="pong-score">
+      <span class="score-num player" id="score-player">0</span>
+      <span class="score-colon">:</span>
+      <span class="score-num ai" id="score-ai">0</span>
+    </div>
+    <button class="pong-exit" id="pong-exit">退出</button>
+  </div>
+  <div class="pong-stage">
+    <canvas id="pong-canvas"></canvas>
+  </div>
+  <div class="overlay hidden" id="overlay-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-result">
+    <div class="overlay-card">
+      <h3 id="result-title">你赢了！</h3>
+      <p id="result-sub">5 : 3</p>
+      <button class="btn btn-full" id="btn-again">再来一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 5. 大鱼吃小鱼对战页 -->
+<section id="screen-fish" class="screen hidden">
+  <div class="fish-topbar">
+    <span class="fish-diff" id="fish-diff-label">普通</span>
+    <div class="fish-score">
+      <span class="score-num player" id="fish-score-player">0</span>
+      <span class="score-colon">:</span>
+      <span class="score-num ai" id="fish-score-ai">0</span>
+    </div>
+    <button class="fish-exit" id="fish-exit">退出</button>
+  </div>
+  <div class="fish-stage">
+    <canvas id="fish-canvas"></canvas>
+  </div>
+  <div class="overlay hidden" id="overlay-fish-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-fish-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-fish-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-fish-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-fish-result">
+    <div class="overlay-card">
+      <h3 id="fish-result-title">游戏结束</h3>
+      <p id="fish-result-sub"></p>
+      <button class="btn btn-full" id="btn-fish-again">再来一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-fish-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 6. 炸弹大乱斗页面 -->
+<section id="screen-bomber" class="screen hidden">
+  <div class="bomber-topbar">
+    <span class="bomber-diff" id="bomber-diff-label">第 1 局</span>
+    <div class="bomber-score">
+      <span class="score-num player" id="bomber-score-a">2</span>
+      <span class="score-colon">:</span>
+      <span class="score-num ai" id="bomber-score-b">2</span>
+    </div>
+    <button class="bomber-exit" id="bomber-exit">退出</button>
+  </div>
+  <div class="bomber-stage">
+    <canvas id="bomber-canvas"></canvas>
+    <div class="dpad-container">
+      <div class="joystick-base" id="bomber-joystick">
+        <div class="joystick-knob" id="bomber-knob"></div>
+      </div>
+      <div class="dpad-group">
+        <div class="hit-btn" id="btn-bomb-plant">炸弹</div>
+      </div>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-bomber-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-bomber-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-bomber-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-bomber-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-bomber-result">
+    <div class="overlay-card">
+      <h3 id="bomber-result-title">你赢了！</h3>
+      <p id="bomber-result-sub"></p>
+      <button class="btn btn-full" id="btn-bomber-again">下一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-bomber-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 7. 黄金矿工页面 -->
+<section id="screen-miner" class="screen hidden">
+  <div class="miner-topbar">
+    <span class="miner-diff" id="miner-diff-label">普通</span>
+    <div class="miner-score">
+      <span class="score-num player" id="miner-score-target">目标: 650</span>
+      <span class="score-colon">|</span>
+      <span class="score-num ai" id="miner-score-current">我方: 0</span>
+      <span class="score-colon">|</span>
+      <span class="score-num ai" id="miner-score-enemy" style="color:#ff6b35">对方: 0</span>
+    </div>
+    <button class="miner-exit" id="miner-exit">退出</button>
+  </div>
+  <div class="miner-stage">
+    <canvas id="miner-canvas"></canvas>
+    <div class="dpad-container" style="justify-content: center; margin-top: 5px;">
+      <div class="hit-btn" id="btn-miner-drop-p1" style="width: 100px; height: 100px; font-size: 22px;">我(下钩)</div>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-miner-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-miner-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-miner-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-miner-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-miner-result">
+    <div class="overlay-card">
+      <h3 id="miner-result-title">时间到！</h3>
+      <p id="miner-result-sub"></p>
+      <button class="btn btn-full" id="btn-miner-again">再来一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-miner-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 8. 扫雷页面 -->
+<section id="screen-ms" class="screen hidden">
+  <div class="ms-topbar">
+    <span class="ms-diff" id="ms-diff-label">普通</span>
+    <div class="ms-score">
+      <span class="score-num player" id="ms-turn-label">你的回合</span>
+    </div>
+    <button class="ms-exit" id="ms-exit">退出</button>
+  </div>
+  <div class="ms-stage">
+    <div id="ms-grid"></div>
+  </div>
+  <div class="overlay hidden" id="overlay-ms-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-ms-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-ms-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-ms-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-ms-result">
+    <div class="overlay-card">
+      <h3 id="ms-result-title">你赢了！</h3>
+      <p id="ms-result-sub"></p>
+      <button class="btn btn-full" id="btn-ms-again">再来一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-ms-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 9. 相扑页面 -->
+<section id="screen-sumo" class="screen hidden">
+  <div class="sumo-topbar">
+    <span class="sumo-diff" id="sumo-diff-label">普通</span>
+    <div class="sumo-score">
+      <span class="score-num player" id="sumo-turn-label">准备...</span>
+    </div>
+    <button class="sumo-exit" id="sumo-exit">退出</button>
+  </div>
+  <div class="sumo-stage">
+    <canvas id="sumo-canvas"></canvas>
+  </div>
+  <div class="overlay hidden" id="overlay-sumo-pause">
+    <div class="overlay-card">
+      <h3>游戏暂停</h3>
+      <button class="btn btn-full" id="btn-sumo-resume">继续游戏</button>
+      <button class="btn btn-ghost btn-full" id="btn-sumo-home">返回游戏列表</button>
+      <button class="btn btn-soft btn-full" id="btn-sumo-restart">重新开始</button>
+    </div>
+  </div>
+  <div class="overlay hidden" id="overlay-sumo-result">
+    <div class="overlay-card">
+      <h3 id="sumo-result-title">你赢了！</h3>
+      <p id="sumo-result-sub"></p>
+      <button class="btn btn-full" id="btn-sumo-again">再来一局</button>
+      <button class="btn btn-ghost btn-full" id="btn-sumo-result-home">返回游戏列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 设置弹窗 -->
+<div class="overlay hidden" id="overlay-settings">
+  <div class="overlay-card" style="max-width: 300px;">
+    <h3>音乐设置</h3>
+    
+    <div style="text-align: left; margin-top: 10px; font-size: 14px; color: #555;">
+      <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <span>背景音乐开关</span>
+        <input type="checkbox" id="toggle-bgm" checked style="width: 20px; height: 20px;">
+      </label>
+      
+      <label style="display: flex; flex-direction: column; margin-bottom: 15px;">
+        <span>音乐音量</span>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" style="width: 100%; margin-top: 8px;">
+      </label>
+      
+      <label style="display: flex; flex-direction: column; margin-bottom: 10px;">
+        <span>自定义音乐 (MP3等)</span>
+        <input type="file" id="custom-music" accept="audio/*" style="margin-top: 8px; font-size: 12px;">
+      </label>
+      
+      <!-- 新增：恢复默认按钮 -->
+      <button class="btn btn-ghost" id="btn-reset-bgm" style="width: 100%; min-height: 40px; font-size: 13px; margin-bottom: 10px;">恢复默认音乐</button>
+    </div>
+    
+    <button class="btn btn-full" id="btn-close-settings" style="margin-top: 10px;">完成</button>
+  </div>
+</div>
+
+<!-- 10. 通用邀请连接弹窗 -->
+<div class="overlay hidden" id="overlay-invite">
+  <div class="overlay-card">
+    <div id="invite-loading">
+      <h3>正在连接...</h3>
+      <p>正在邀请对方，请稍候</p>
+      <div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>
+      <button class="btn btn-ghost btn-full" id="btn-loading-cancel">取消</button>
+    </div>
+    <div id="invite-success" class="hidden">
+      <h3>连接成功！</h3>
+      <p>对方已接受邀请</p>
+      <button class="btn btn-full" id="btn-start-multi" style="margin-top: 10px;">开始游戏</button>
+    </div>
+    <div id="invite-failed" class="hidden">
+      <h3>连接失败</h3>
+      <p>对方可能正在忙，是否自己玩？</p>
+      <button class="btn btn-full" id="btn-play-solo">是</button>
+      <button class="btn btn-ghost btn-full" id="btn-invite-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   PWA Service Worker 注册
+   ========================================================= */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+
+/* =========================================================
+   BGM (支持音量、暂停、自定义音乐)
+   ========================================================= */
+const BGM = (function () {
+  let audioCtx = null;
+  let isPlaying = false;
+  let timer = null;
+  let noteIndex = 0;
+  
+  let volume = 0.5; 
+  let isMuted = false;
+  let isCustom = false;
+  let customAudio = new Audio();
+  customAudio.loop = true;
+  customAudio.volume = volume;
+
+  const melody = [
+    523.25, 587.33, 659.25, 523.25, 659.25, 587.33, 523.25, 440.00,
+    440.00, 493.88, 523.25, 440.00, 523.25, 493.88, 440.00, 392.00,
+    349.23, 392.00, 440.00, 349.23, 440.00, 392.00, 349.23, 329.63,
+    329.63, 349.23, 392.00, 329.63, 392.00, 349.23, 329.63, 293.66
+  ];
+
+  function initCtx() {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playNote(freq, time, dur, vol) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle'; 
+    osc.frequency.value = freq;
+    
+    const actualVol = vol * volume;
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(actualVol, time + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(time);
+    osc.stop(time + dur);
+  }
+
+  function schedule() {
+    if (!isPlaying || isMuted) return;
+    const now = audioCtx.currentTime;
+    const tempo = 0.22; 
+
+    const freq = melody[noteIndex];
+    playNote(freq, now, tempo * 0.85, 0.06);
+    if (noteIndex % 4 === 0) playNote(freq / 4, now, tempo * 3, 0.04);
+
+    noteIndex = (noteIndex + 1) % melody.length;
+    timer = setTimeout(schedule, tempo * 1000);
+  }
+
+  return {
+    start: function () {
+      if (isPlaying) return;
+      isPlaying = true;
+      
+      if (isCustom) {
+        customAudio.play().catch(e => console.log("播放失败需用户交互", e));
+      } else {
+        initCtx();
+        noteIndex = 0;
+        schedule();
+      }
+    },
+    stop: function () {
+      isPlaying = false;
+      if (timer) clearTimeout(timer);
+      customAudio.pause();
+    },
+    setVolume: function (v) {
+      volume = v;
+      customAudio.volume = v;
+    },
+    setMute: function (mute) {
+      isMuted = mute;
+      if (mute) {
+        if (isCustom) customAudio.pause();
+        else if (timer) clearTimeout(timer);
+      } else {
+        if (isPlaying) {
+          if (isCustom) customAudio.play().catch(e => {});
+          else { noteIndex = 0; schedule(); }
+        }
+      }
+    },
+    setCustomMusic: function (file) {
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      customAudio.src = url;
+      isCustom = true;
+      
+      if (isPlaying) {
+        if (timer) clearTimeout(timer);
+        customAudio.play().catch(e => {});
+      }
+    },
+    // 新增：恢复默认
+    resetToDefault: function () {
+      customAudio.pause();
+      customAudio.src = "";
+      isCustom = false;
+      if (isPlaying && !isMuted) {
+        initCtx();
+        noteIndex = 0;
+        schedule();
+      }
+    }
+  };
+})();
+
+/* =========================================================
+   页面切换基础
+   ========================================================= */
+const screenEls = {
+  home:          document.getElementById('screen-home'),
+  games:         document.getElementById('screen-games'),
+  difficulty:    document.getElementById('screen-difficulty'),
+  fishDiff:      document.getElementById('screen-fish-diff'),
+  bomberDiff:    document.getElementById('screen-bomber-diff'),
+  minerDiff:     document.getElementById('screen-miner-diff'),
+  msDiff:        document.getElementById('screen-ms-diff'),
+  sumoDiff:      document.getElementById('screen-sumo-diff'),
+  pong:          document.getElementById('screen-pong'),
+  fish:          document.getElementById('screen-fish'),
+  bomber:        document.getElementById('screen-bomber'),
+  miner:         document.getElementById('screen-miner'),
+  ms:            document.getElementById('screen-ms'),
+  sumo:          document.getElementById('screen-sumo')
+};
+
+function showScreen(name) {
+  for (const k in screenEls) screenEls[k].classList.add('hidden');
+  screenEls[name].classList.remove('hidden');
+}
+
+/* =========================================================
+   游戏一：乒乓对战
+   ========================================================= */
+const Pong = (function () {
+  'use strict';
+  const canvas   = document.getElementById('pong-canvas');
+  const ctx      = canvas.getContext('2d');
+  const elScoreP = document.getElementById('score-player');
+  const elScoreA = document.getElementById('score-ai');
+  const elDiff   = document.getElementById('pong-diff');
+  const overlayPause  = document.getElementById('overlay-pause');
+  const overlayResult = document.getElementById('overlay-result');
+  const elResultTitle = document.getElementById('result-title');
+  const elResultSub   = document.getElementById('result-sub');
+
+  const WIN_SCORE = 5;
+  const MAX_STEP  = 1 / 120;
+
+  const DIFF = {
+    easy:   { label: '简单', ballSpeed: 0.78, aiSpeed: 0.20, wobble: 1.20 },
+    normal: { label: '普通', ballSpeed: 0.92, aiSpeed: 0.42, wobble: 0.60 },
+    hard:   { label: '困难', ballSpeed: 1.08, aiSpeed: 0.70, wobble: 0.15 }
+  };
+
+  let W = 0, H = 0, dpr = 1;
+
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal',
+    playerScore: 0, aiScore: 0, countdown: 0,
+    ball:   { x: 0, y: 0, r: 7, vx: 0, vy: 0 },
+    player: { x: 0, y: 0, r: 30 }, 
+    ai:     { x: 0, y: 0, r: 30 },
+    targetX: 0, targetY: 0, serveTimer: 0, raf: null, lastTs: 0
+  };
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+  function resize() {
+    const stage = canvas.parentElement;
+    const cs = getComputedStyle(stage);
+    let availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    let availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    
+    if (isNaN(availW) || availW < 10) availW = window.innerWidth - 20;
+    if (isNaN(availH) || availH < 10) availH = window.innerHeight * 0.55;
+
+    const ASPECT = 1.55;
+    let cw = Math.min(availW, 480);
+    let ch = cw * ASPECT;
+    if (ch > availH) { ch = availH; cw = ch / ASPECT; }
+    if (cw < 1) cw = 1; if (ch < 1) ch = 1;
+
+    const newW = Math.floor(cw); const newH = Math.floor(ch);
+    if (newW === W && newH === H && canvas.width > 0) return;
+
+    const oldW = W, oldH = H;
+    W = newW; H = newH;
+
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    S.player.r = clamp(W * 0.12, 26, 45); S.ai.r = S.player.r; S.ball.r = clamp(W * 0.035, 8, 14);
+    S.player.x = W / 2; S.player.y = H * 0.8; S.targetX = S.player.x; S.targetY = S.player.y;
+    S.ai.x = W / 2; S.ai.y = H * 0.2;
+
+    if (oldW > 1 && oldH > 1) {
+      const kx = W / oldW, ky = H / oldH;
+      S.ball.x *= kx; S.ball.y *= ky;
+    } else {
+      S.ball.x = W / 2; S.ball.y = H / 2;
+    }
+  }
+
+  function resetBall(isPlayerServe) {
+    const b = S.ball; b.x = W / 2;
+    const diff = DIFF[S.diff];
+    const base = Math.min(W, H) * 1.1 * diff.ballSpeed;
+    const angle = (Math.random() * 0.4 - 0.2); 
+    if (isPlayerServe) { b.y = H * 0.75; b.vx = Math.sin(angle) * base; b.vy = -Math.cos(angle) * base; }
+    else { b.y = H * 0.25; b.vx = Math.sin(angle) * base; b.vy = Math.cos(angle) * base; }
+    S.serveTimer = 0.65; 
+  }
+
+  function updateScore() { elScoreP.textContent = S.playerScore; elScoreA.textContent = S.aiScore; }
+
+  function checkHit(racket) {
+    const b = S.ball; const dx = b.x - racket.x; const dy = b.y - racket.y;
+    const dist = Math.hypot(dx, dy); const minDist = b.r + racket.r;
+    if (dist < minDist) {
+      const nx = dx / (dist || 1); const ny = dy / (dist || 1);
+      b.x += nx * (minDist - dist); b.y += ny * (minDist - dist);
+      const dot = b.vx * nx + b.vy * ny;
+      if (dot < 0) { 
+        b.vx = b.vx - 2 * dot * nx; b.vy = b.vy - 2 * dot * ny;
+        const speed = Math.hypot(b.vx, b.vy) * 1.03;
+        const finalSpeed = clamp(speed, Math.min(W, H) * 0.8, Math.min(W, H) * 1.5);
+        b.vx = (b.vx / Math.hypot(b.vx, b.vy)) * finalSpeed;
+        b.vy = (b.vy / Math.hypot(b.vx, b.vy)) * finalSpeed;
+      }
+    }
+  }
+
+  function updatePlayer() {
+    S.player.x = clamp(S.targetX, S.player.r, W - S.player.r);
+    S.player.y = clamp(S.targetY, H / 2 + S.player.r, H - S.player.r);
+  }
+
+  function updateAI(dt) {
+    const b = S.ball; const diff = DIFF[S.diff];
+    const minX = S.ai.r; const maxX = W - S.ai.r;
+    const targetX = clamp(b.x + (Math.random() * 2 - 1) * W * diff.wobble * 0.2, minX, maxX);
+    const targetY = clamp(b.y - H * 0.1, S.ai.r, H / 2 - S.ai.r - 20); 
+    const maxStep = Math.min(W, H) * diff.aiSpeed * dt;
+    S.ai.x += clamp(targetX - S.ai.x, -maxStep, maxStep);
+    S.ai.y += clamp(targetY - S.ai.y, -maxStep, maxStep);
+    S.ai.x = clamp(S.ai.x, minX, maxX); S.ai.y = clamp(S.ai.y, S.ai.r, H / 2 - S.ai.r - 20);
+  }
+
+  function physics(step) {
+    const b = S.ball;
+    b.x += b.vx * step; b.y += b.vy * step;
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx); }
+    else if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx); }
+    checkHit(S.player); checkHit(S.ai);
+    if (b.y - b.r > H) {
+      S.aiScore++; updateScore();
+      if (S.aiScore >= WIN_SCORE) { endGame('ai'); return; }
+      resetBall(true);
+    } else if (b.y + b.r < 0) {
+      S.playerScore++; updateScore();
+      if (S.playerScore >= WIN_SCORE) { endGame('player'); return; }
+      resetBall(false);
+    }
+  }
+
+  function update(dt) {
+    if (!S.running) return;
+    if (S.countdown > 0) {
+      S.countdown -= dt;
+      S.targetX = W / 2; S.targetY = H * 0.8; S.player.x = W / 2; S.player.y = H * 0.8;
+      S.ai.x = W / 2; S.ai.y = H * 0.2; S.ball.x = W / 2; S.ball.y = H * 0.75;
+      if (S.countdown <= 0) { S.countdown = 0; resetBall(true); S.serveTimer = 0; }
+      return; 
+    }
+    updatePlayer(); updateAI(dt);
+    const b = S.ball;
+    if (S.serveTimer > 0) { S.serveTimer -= dt; return; }
+    let remaining = dt;
+    while (remaining > 0) {
+      const step = Math.min(remaining, MAX_STEP);
+      physics(step);
+      if (!S.running) return;
+      remaining -= step;
+    }
+  }
+
+  function render() {
+    ctx.fillStyle = '#758594'; ctx.fillRect(0, 0, W, H);
+    const margin = Math.max(8, Math.min(W, H) * 0.04);
+    ctx.fillStyle = '#3b47ab'; ctx.fillRect(margin, margin, W - margin * 2, H - margin * 2);
+    const innerMargin = margin * 1.5;
+    ctx.lineWidth = margin * 0.12; ctx.strokeStyle = '#586adb'; ctx.strokeRect(innerMargin, innerMargin, W - innerMargin * 2, H - innerMargin * 2);
+    ctx.lineWidth = margin * 0.4; ctx.strokeStyle = '#000000'; ctx.strokeRect(margin, margin, W - margin * 2, H - margin * 2);
+    const midY = H / 2; ctx.fillStyle = '#ffffff'; const lineH = margin * 0.25; ctx.fillRect(margin, midY - lineH / 2, W - margin * 2, lineH);
+    drawRacket(S.ai.x, S.ai.y, S.ai.r, '#00b4ff', true); drawRacket(S.player.x, S.player.y, S.player.r, '#ff5100', false); 
+    const b = S.ball; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#000000'; ctx.stroke();
+    if (S.countdown > 0) {
+      ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'; ctx.fillRect(0, 0, W, H);
+      let text = S.countdown > 3 ? '3' : S.countdown > 2 ? '2' : S.countdown > 1 ? '1' : '开始！';
+      ctx.fillStyle = text === '开始！' ? '#ff6b35' : '#ffffff';
+      const fontSize = Math.floor(W * 0.2); ctx.font = 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const scale = 1 + 0.05 * Math.sin(Date.now() / 100);
+      ctx.translate(W / 2, H / 2); ctx.scale(scale, scale); ctx.fillText(text, 0, 0); ctx.restore();
+    }
+  }
+
+  function drawRacket(x, y, r, color, isTop) {
+    ctx.save(); ctx.translate(x, y); if (isTop) ctx.rotate(Math.PI);
+    ctx.beginPath(); ctx.rect(-r * 0.25, r * 0.8, r * 0.5, r * 0.9); ctx.fillStyle = '#ffa200'; ctx.fill(); ctx.lineWidth = Math.max(4, r * 0.15); ctx.strokeStyle = '#000000'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = Math.max(4, r * 0.15); ctx.strokeStyle = '#000000'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, r - ctx.lineWidth / 2, 0.1, Math.PI - 0.1); ctx.lineTo(-r + ctx.lineWidth / 2, 0); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-r + ctx.lineWidth / 2, 0); ctx.lineTo(r - ctx.lineWidth / 2, 0); ctx.lineWidth = Math.max(3, r * 0.12); ctx.strokeStyle = '#000000'; ctx.stroke(); ctx.restore();
+  }
+
+  function loop(ts) {
+    if (!S.running) return; if (!S.lastTs) S.lastTs = ts;
+    let dt = (ts - S.lastTs) / 1000; S.lastTs = ts; if (dt > 0.05) dt = 0.05;
+    if (!S.paused) { update(dt); if (!S.running) { render(); return; } }
+    render(); S.raf = requestAnimationFrame(loop);
+  }
+
+  function endGame(winner) {
+    S.over = true; S.running = false; S.paused = false; cancelAnimationFrame(S.raf); render();
+    elResultTitle.textContent = winner === 'player' ? '🎉 你赢了！' : '😵 对手获胜';
+    elResultSub.textContent = `你 ${S.playerScore} : ${S.aiScore} 对手`; overlayResult.classList.remove('hidden');
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff; S.playerScore = 0; S.aiScore = 0; S.over = false; S.paused = false; S.serveTimer = 0; S.countdown = 4.0; 
+    elDiff.textContent = DIFF[S.diff].label; updateScore(); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+    resize(); S.targetX = W / 2; S.targetY = H * 0.8; S.player.x = W / 2; S.player.y = H * 0.8; S.ai.x = W / 2; S.ai.y = H * 0.2; S.ball.x = W / 2; S.ball.y = H * 0.75; S.ball.vx = 0; S.ball.vy = 0;
+    S.running = true; S.lastTs = 0; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+  }
+
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  function resume() { S.paused = false; S.lastTs = 0; overlayPause.classList.add('hidden'); }
+  function stop() { S.running = false; S.paused = false; S.over = false; S.countdown = 0; cancelAnimationFrame(S.raf); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden'); }
+
+  let pointerActive = false;
+  function updatePointer(clientX, clientY) {
+    if (S.countdown > 0) return; const rect = canvas.getBoundingClientRect(); S.targetX = clientX - rect.left; S.targetY = clientY - rect.top;
+  }
+  canvas.addEventListener('pointerdown', function (e) { pointerActive = true; if(canvas.setPointerCapture) try{canvas.setPointerCapture(e.pointerId);}catch(err){} updatePointer(e.clientX, e.clientY); });
+  canvas.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' || pointerActive) updatePointer(e.clientX, e.clientY); });
+  canvas.addEventListener('pointerup', function () { pointerActive = false; }); canvas.addEventListener('pointercancel', function () { pointerActive = false; }); canvas.addEventListener('pointerleave', function () { pointerActive = false; });
+  window.addEventListener('resize', function () { if (S.running) resize(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { if (S.running) resize(); }, 180); });
+
+  return { start, pause, resume, stop };
+})();
+
+/* =========================================================
+   游戏二：大鱼吃小鱼
+   ========================================================= */
+const Fish = (function () {
+  'use strict';
+  const canvas = document.getElementById('fish-canvas');
+  const ctx = canvas.getContext('2d');
+  const elScoreP = document.getElementById('fish-score-player');
+  const elScoreA = document.getElementById('fish-score-ai');
+  const elDiff = document.getElementById('fish-diff-label');
+  const overlayPause = document.getElementById('overlay-fish-pause');
+  const overlayResult = document.getElementById('overlay-fish-result');
+  const elResultTitle = document.getElementById('fish-result-title');
+  const elResultSub = document.getElementById('fish-result-sub');
+
+  let W = 0, H = 0, dpr = 1;
+  
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal',
+    countdown: 0, timeLeft: 60, spawnTimer: 0,
+    player: { x: 0, y: 0, r: 20, facing: 1, alive: true, score: 0, targetX: 0, targetY: 0 },
+    ai:     { x: 0, y: 0, r: 20, facing: 1, alive: true, score: 0, targetX: 0, targetY: 0, aiTimer: 0, state: 'wander' },
+    fishes: [], bubbles: [], raf: null, lastTs: 0
+  };
+
+  const DIFF = {
+    easy:   { label: '简单', spawnRate: 1200, maxEnemySize: 1.5, aiSpeed: 2.5 },
+    normal: { label: '普通', spawnRate: 800, maxEnemySize: 2.0, aiSpeed: 3.5 },
+    hard:   { label: '困难', spawnRate: 500, maxEnemySize: 2.5, aiSpeed: 4.5 }
+  };
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+  function resize() {
+    const stage = canvas.parentElement;
+    let availW = stage.clientWidth;
+    let availH = stage.clientHeight;
+    
+    if (isNaN(availW) || availW < 100) availW = window.innerWidth;
+    if (isNaN(availH) || availH < 100) availH = window.innerHeight * 0.7;
+
+    W = Math.floor(availW); H = Math.floor(availH);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+    if (!S.running) {
+      S.player.x = W / 2; S.player.y = H * 0.3;
+      S.ai.x = W / 2; S.ai.y = H * 0.7;
+    }
+  }
+
+  function spawnFish() {
+    const diff = DIFF[S.diff];
+    const isBig = Math.random() < 0.3;
+    let r = isBig ? (25 + Math.random() * 30) : (10 + Math.random() * 15);
+    r = Math.min(r, Math.max(S.player.r, S.ai.r) * diff.maxEnemySize); 
+    
+    const colors = ['#FF5722', '#FFC107', '#8BC34A', '#00BCD4', '#E91E63'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    
+    const fromLeft = Math.random() < 0.5;
+    const x = fromLeft ? -r : W + r;
+    const y = r + Math.random() * (H - r * 2);
+    const vx = (fromLeft ? 1 : -1) * (0.5 + Math.random() * 1.5);
+    
+    S.fishes.push({ x, y, r, vx, vy: 0, color });
+  }
+
+  function updatePlayer(dt) {
+    const p = S.player;
+    if (!p.alive) return;
+    const ts = dt / 16.66;
+    
+    const dx = p.targetX - p.x;
+    const dy = p.targetY - p.y;
+    const dist = Math.hypot(dx, dy);
+    
+    if (dist > 8) {
+      const speed = 6.5; 
+      const move = Math.min(speed * ts, dist - 5); 
+      p.x += (dx / dist) * move;
+      p.y += (dy / dist) * move;
+      if (dx > 0) p.facing = 1; if (dx < 0) p.facing = -1;
+    } else {
+      p.targetX = p.x;
+      p.targetY = p.y;
+    }
+
+    p.x = clamp(p.x, p.r, W - p.r);
+    p.y = clamp(p.y, p.r, H - p.r);
+  }
+
+  function updateAI(dt) {
+    const ai = S.ai;
+    if (!ai.alive) return;
+    
+    ai.aiTimer -= dt;
+    
+    if (ai.aiTimer <= 0) {
+      let nearestDanger = null, minDangerDist = 150;
+      let nearestPrey = null, minPreyDist = 300;
+      
+      for (let f of S.fishes) {
+        const dist = Math.hypot(f.x - ai.x, f.y - ai.y);
+        if (f.r > ai.r + 5 && dist < minDangerDist) {
+          minDangerDist = dist; nearestDanger = f;
+        } else if (f.r < ai.r - 5 && dist < minPreyDist) {
+          minPreyDist = dist; nearestPrey = f;
+        }
+      }
+      
+      if (nearestDanger) {
+        ai.state = 'escape';
+        ai.targetX = ai.x - (nearestDanger.x - ai.x) * 3;
+        ai.targetY = ai.y - (nearestDanger.y - ai.y) * 3;
+        ai.aiTimer = 500;
+      } else if (nearestPrey) {
+        ai.state = 'chase';
+        ai.targetX = nearestPrey.x;
+        ai.targetY = nearestPrey.y;
+        ai.aiTimer = 1000;
+      } else {
+        ai.state = 'wander';
+        ai.targetX = W/2 + (Math.random() - 0.5) * W * 0.8;
+        ai.targetY = H/2 + (Math.random() - 0.5) * H * 0.8;
+        ai.aiTimer = 2000;
+      }
+    }
+    
+    if (ai.state === 'chase') {
+      let bestPrey = null, bestDist = 9999;
+      for (let f of S.fishes) {
+        if (f.r < ai.r - 5) {
+          const d = Math.hypot(f.x - ai.x, f.y - ai.y);
+          if (d < bestDist) { bestDist = d; bestPrey = f; }
+        }
+      }
+      if (bestPrey) { ai.targetX = bestPrey.x; ai.targetY = bestPrey.y; }
+      else ai.aiTimer = 0; 
+    }
+
+    const ts = dt / 16.66;
+    const dx = ai.targetX - ai.x;
+    const dy = ai.targetY - ai.y;
+    const dist = Math.hypot(dx, dy);
+    
+    if (dist > 5) {
+      const speed = DIFF[S.diff].aiSpeed * ts;
+      ai.x += (dx / dist) * speed;
+      ai.y += (dy / dist) * speed;
+      if (dx > 0) ai.facing = 1; if (dx < 0) ai.facing = -1;
+    }
+
+    ai.x = clamp(ai.x, ai.r, W - ai.r);
+    ai.y = clamp(ai.y, ai.r, H - ai.r);
+  }
+
+  function updateFishes(dt) {
+    const ts = dt / 16.66;
+
+    for (let i = S.fishes.length - 1; i >= 0; i--) {
+      let f = S.fishes[i];
+      f.x += f.vx * ts;
+      f.y += Math.sin(Date.now() / 300 + f.x * 0.01) * 0.5;
+
+      if ((f.vx > 0 && f.x - f.r > W) || (f.vx < 0 && f.x + f.r < 0)) {
+        S.fishes.splice(i, 1);
+        continue;
+      }
+
+      const p = S.player;
+      if (p.alive) {
+        const distP = Math.hypot(p.x - f.x, p.y - f.y);
+        if (distP < p.r + f.r * 0.8) {
+          if (p.r > f.r + 2) {
+            p.r += f.r * 0.05; p.score += Math.floor(f.r);
+            elScoreP.textContent = p.score;
+            S.bubbles.push({ x: f.x, y: f.y, r: 5, life: 1 });
+            S.fishes.splice(i, 1);
+            continue;
+          } else if (p.r < f.r - 2) {
+            p.alive = false;
+            endGame('ai'); 
+            return;
+          }
+        }
+      }
+
+      const ai = S.ai;
+      if (ai.alive) {
+        const distAI = Math.hypot(ai.x - f.x, ai.y - f.y);
+        if (distAI < ai.r + f.r * 0.8) {
+          if (ai.r > f.r + 2) {
+            ai.r += f.r * 0.05; ai.score += Math.floor(f.r);
+            elScoreA.textContent = ai.score;
+            S.bubbles.push({ x: f.x, y: f.y, r: 5, life: 1 });
+            S.fishes.splice(i, 1);
+            continue;
+          } else if (ai.r < f.r - 2) {
+            ai.alive = false;
+            endGame('player'); 
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  function updateBubbles(dt) {
+    for (let i = S.bubbles.length - 1; i >= 0; i--) {
+      let b = S.bubbles[i]; b.y -= dt * 0.1; b.life -= dt * 0.003;
+      if (b.life <= 0) S.bubbles.splice(i, 1);
+    }
+  }
+
+  function update(dt) {
+    if (!S.running) return;
+    if (S.countdown > 0) { S.countdown -= (dt / 1000); return; }
+
+    S.timeLeft -= (dt / 1000);
+    if (S.timeLeft <= 0) { S.timeLeft = 0; endGame('timeup'); return; }
+
+    updatePlayer(dt); updateAI(dt); updateFishes(dt); updateBubbles(dt);
+
+    S.spawnTimer -= dt;
+    if (S.spawnTimer <= 0) { spawnFish(); S.spawnTimer = DIFF[S.diff].spawnRate; }
+  }
+
+  function drawFish(x, y, r, color, facing, text) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (facing === -1) ctx.scale(-1, 1);
+
+    ctx.beginPath(); ctx.moveTo(-r * 0.8, 0); ctx.lineTo(-r * 1.5, -r * 0.6); ctx.lineTo(-r * 1.5, r * 0.6); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.7, 0, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.15, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.45, -r * 0.2, r * 0.07, 0, Math.PI * 2); ctx.fillStyle = '#000'; ctx.fill();
+    
+    ctx.scale(facing, 1); 
+    if (text) {
+      ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.max(12, r*0.6) + 'px "PingFang SC", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3;
+      ctx.strokeText(text, 0, -r - 10); ctx.fillText(text, 0, -r - 10);
+    }
+    ctx.restore();
+  }
+
+  function render() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#006994'); grad.addColorStop(1, '#003366');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+    for (let b of S.bubbles) {
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.strokeStyle = `rgba(255,255,255,${b.life})`; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    for (let f of S.fishes) drawFish(f.x, f.y, f.r, f.color, f.vx > 0 ? 1 : -1, null);
+
+    if (S.ai.alive) drawFish(S.ai.x, S.ai.y, S.ai.r, '#a88bff', S.ai.facing, '对方');
+    if (S.player.alive) drawFish(S.player.x, S.player.y, S.player.r, '#FFD700', S.player.facing, '我');
+
+    if (S.countdown > 0) {
+      ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; ctx.fillRect(0, 0, W, H);
+      let text = S.countdown > 3 ? '3' : S.countdown > 2 ? '2' : S.countdown > 1 ? '1' : '开始！';
+      ctx.fillStyle = text === '开始！' ? '#ff6b35' : '#ffffff';
+      const fontSize = Math.floor(H * 0.25); ctx.font = 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const scale = 1 + 0.05 * Math.sin(Date.now() / 100);
+      ctx.translate(W / 2, H / 2); ctx.scale(scale, scale); ctx.fillText(text, 0, 0); ctx.restore();
+    }
+  }
+
+  function loop(ts) {
+    if (!S.running) return; if (!S.lastTs) S.lastTs = ts;
+    let dt = (ts - S.lastTs); S.lastTs = ts; if (dt > 50) dt = 50;
+    if (!S.paused) update(dt);
+    if (S.running) render();
+    if (S.running) S.raf = requestAnimationFrame(loop);
+  }
+
+  function endGame(reason) {
+    S.running = false; cancelAnimationFrame(S.raf); render();
+    
+    if (reason === 'player') {
+      elResultTitle.textContent = '🎉 对方被吃，你赢了！';
+    } else if (reason === 'ai') {
+      elResultTitle.textContent = '😵 你被大鱼吃掉了！';
+    } else {
+      elResultTitle.textContent = '时间到！';
+    }
+    
+    elResultSub.textContent = `我方得分: ${S.player.score}\n对方得分: ${S.ai.score}`;
+    overlayResult.classList.remove('hidden');
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff; S.running = false; S.paused = false; S.over = false;
+    S.timeLeft = 60; S.countdown = 4.0; S.spawnTimer = 0;
+    S.fishes = []; S.bubbles = [];
+    
+    elDiff.textContent = DIFF[S.diff].label;
+    elScoreP.textContent = '0'; elScoreA.textContent = '0';
+    overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+
+    resize();
+    S.player = { x: W / 2, y: H / 3, r: 20, facing: 1, alive: true, score: 0, targetX: W/2, targetY: H/3 };
+    S.ai = { x: W / 2, y: H * 2/3, r: 20, facing: 1, alive: true, score: 0, targetX: W/2, targetY: H*2/3, aiTimer: 0, state: 'wander' };
+
+    S.running = true; S.lastTs = 0;
+    cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+  }
+
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  function resume() { S.paused = false; S.lastTs = 0; overlayPause.classList.add('hidden'); }
+  function stop() { 
+    S.running = false; S.paused = false; S.over = false; S.countdown = 0; 
+    cancelAnimationFrame(S.raf); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+  }
+
+  let isDragging = false;
+  canvas.addEventListener('pointerdown', function(e) {
+    if (S.countdown > 0 || !S.player.alive) return;
+    isDragging = true;
+    if (canvas.setPointerCapture) try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+    const rect = canvas.getBoundingClientRect();
+    S.player.targetX = e.clientX - rect.left;
+    S.player.targetY = e.clientY - rect.top;
+  });
+
+  canvas.addEventListener('pointermove', function(e) {
+    if (!isDragging || S.countdown > 0 || !S.player.alive) return;
+    const rect = canvas.getBoundingClientRect();
+    S.player.targetX = e.clientX - rect.left;
+    S.player.targetY = e.clientY - rect.top;
+  });
+
+  const endDrag = function() { isDragging = false; };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  window.addEventListener('resize', function () { if (S.running) resize(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { if (S.running) resize(); }, 180); });
+
+  return { start, pause, resume, stop };
+})();
+
+/* =========================================================
+   游戏三：炸弹大乱斗 (2v2)
+   ========================================================= */
+const Bomber = (function () {
+  'use strict';
+  const canvas = document.getElementById('bomber-canvas');
+  const ctx = canvas.getContext('2d');
+  const elScoreA = document.getElementById('bomber-score-a');
+  const elScoreB = document.getElementById('bomber-score-b');
+  const elDiff = document.getElementById('bomber-diff-label');
+  const overlayPause = document.getElementById('overlay-bomber-pause');
+  const overlayResult = document.getElementById('overlay-bomber-result');
+  const elResultTitle = document.getElementById('bomber-result-title');
+  const elResultSub = document.getElementById('bomber-result-sub');
+  const btnAgain = document.getElementById('btn-bomber-again');
+
+  const COLS = 13;
+  const ROWS = 9;
+  let tileSize = 30;
+  let W = 0, H = 0, dpr = 1;
+  
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal', isMatchOver: false,
+    countdown: 0, grid: [], entities: [], bombs: [], explosions: [],
+    lastTs: 0, raf: null, playerSpeed: 2.0, 
+    round: 1, scoreA: 0, scoreB: 0,
+    input: { up: false, down: false, left: false, right: false, bomb: false }
+  };
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+  function resize() {
+    const stage = canvas.parentElement;
+    let availW = stage.clientWidth - 20;
+    let availH = window.innerHeight * 0.55;
+    
+    if (isNaN(availW) || availW < 100) availW = window.innerWidth - 40;
+    if (isNaN(availH) || availH < 100) availH = window.innerHeight * 0.55;
+
+    const maxTileW = Math.floor(availW / COLS);
+    const maxTileH = Math.floor(availH / ROWS);
+    tileSize = Math.min(maxTileW, maxTileH);
+    if (tileSize < 10) tileSize = 30; 
+    
+    W = tileSize * COLS; H = tileSize * ROWS;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function initMap() {
+    S.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) S.grid[r][c] = 1;
+        else if (r % 2 === 0 && c % 2 === 0) S.grid[r][c] = 1;
+        else {
+          const spawns = [[1,1], [1,2], [2,1], [1, COLS-2], [1, COLS-3], [2, COLS-2], [ROWS-2, 1], [ROWS-3, 1], [ROWS-2, 2], [ROWS-2, COLS-2], [ROWS-3, COLS-2], [ROWS-2, COLS-3]];
+          const isSpawn = spawns.some(sp => sp[0] === r && sp[1] === c);
+          if (!isSpawn && Math.random() < 0.4) S.grid[r][c] = 2;
+        }
+      }
+    }
+  }
+
+  function initEntities() {
+    S.entities = [
+      { id: 'player', team: 'A', x: 1.5 * tileSize, y: 1.5 * tileSize, r: tileSize * 0.35, speed: S.playerSpeed, alive: true, isPlayer: true, color: '#2196F3', name: '我', vx: 0, vy: 0, aiTimer: 0, escapeTimer: 0 },
+      { id: 'ally', team: 'A', x: 1.5 * tileSize, y: (ROWS-1.5) * tileSize, r: tileSize * 0.35, speed: 1.5, alive: true, isPlayer: false, color: '#4CAF50', name: '友', vx: 0, vy: 0, aiTimer: 0, escapeTimer: 0 },
+      { id: 'enemy1', team: 'B', x: (COLS-1.5) * tileSize, y: 1.5 * tileSize, r: tileSize * 0.35, speed: 1.5, alive: true, isPlayer: false, color: '#F44336', name: '敌', vx: 0, vy: 0, aiTimer: 0, escapeTimer: 0 },
+      { id: 'enemy2', team: 'B', x: (COLS-1.5) * tileSize, y: (ROWS-1.5) * tileSize, r: tileSize * 0.35, speed: 1.5, alive: true, isPlayer: false, color: '#9C27B0', name: '敌', vx: 0, vy: 0, aiTimer: 0, escapeTimer: 0 }
+    ];
+  }
+
+  function isColliding(x, y, r) {
+    const left = Math.floor((x - r) / tileSize), right = Math.floor((x + r) / tileSize);
+    const top = Math.floor((y - r) / tileSize), bottom = Math.floor((y + r) / tileSize);
+    for (let row = top; row <= bottom; row++) {
+      for (let col = left; col <= right; col++) {
+        if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return true;
+        if (S.grid[row][col] !== 0) return true;
+      }
+    }
+    return false;
+  }
+
+  function plantBomb(entity) {
+    const cx = Math.floor(entity.x / tileSize), cy = Math.floor(entity.y / tileSize);
+    if (S.bombs.some(b => b.cx === cx && b.cy === cy)) return;
+    S.bombs.push({ cx, cy, x: cx * tileSize + tileSize/2, y: cy * tileSize + tileSize/2, timer: 2.5, owner: entity });
+  }
+
+  function updatePlayer(dt) {
+    const p = S.entities[0];
+    if (!p.alive) return;
+    let dx = 0, dy = 0;
+    if (S.input.left) dx = -1; if (S.input.right) dx = 1; if (S.input.up) dy = -1; if (S.input.down) dy = 1;
+    if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
+    const step = p.speed * (dt / 16.66);
+    if (dx !== 0) { if (!isColliding(p.x + dx * step, p.y, p.r * 0.6)) p.x += dx * step; }
+    if (dy !== 0) { if (!isColliding(p.x, p.y + dy * step, p.r * 0.6)) p.y += dy * step; }
+    if (S.input.bomb) { S.input.bomb = false; plantBomb(p); }
+  }
+
+  function getSafeDirection(entity) {
+    const startCx = Math.floor(entity.x / tileSize);
+    const startCy = Math.floor(entity.y / tileSize);
+    
+    const dangerSet = new Set();
+    const dangerBombs = S.bombs.filter(b => b.timer < 1.5);
+    
+    for (let b of dangerBombs) {
+      dangerSet.add(`${b.cx},${b.cy}`);
+      const dirs = [[0,-1], [0,1], [-1,0], [1,0]];
+      for (let d of dirs) {
+        let nx = b.cx + d[0], ny = b.cy + d[1];
+        while (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && S.grid[ny][nx] !== 1) {
+          dangerSet.add(`${nx},${ny}`);
+          if (S.grid[ny][nx] === 2) break;
+          nx += d[0]; ny += d[1];
+        }
+      }
+    }
+
+    if (dangerSet.size === 0) return null;
+
+    const queue = [{x: startCx, y: startCy, firstMove: null}];
+    const visited = new Set();
+    visited.add(`${startCx},${startCy}`);
+    
+    const dirs = [[0,-1], [0,1], [-1,0], [1,0]];
+    
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      if (!dangerSet.has(`${curr.x},${curr.y}`) && !S.bombs.some(b => b.cx === curr.x && b.cy === curr.y)) {
+        return curr.firstMove;
+      }
+      
+      for (let d of dirs) {
+        const nx = curr.x + d[0], ny = curr.y + d[1];
+        if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && S.grid[ny][nx] === 0) {
+          const key = `${nx},${ny}`;
+          if (!visited.has(key)) {
+            visited.add(key);
+            queue.push({x: nx, y: ny, firstMove: curr.firstMove || d});
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function updateAI(dt, e) {
+    if (!e.alive) return;
+    e.aiTimer -= dt;
+    
+    const safeDir = getSafeDirection(e);
+    
+    if (safeDir) {
+      e.vx = safeDir[0];
+      e.vy = safeDir[1];
+    } 
+    else if (e.aiTimer <= 0) {
+      const dirs = [[0,-1], [0,1], [-1,0], [1,0]];
+      let validDirs = [];
+      for (let d of dirs) {
+        const nx = e.x + d[0] * tileSize * 0.8, ny = e.y + d[1] * tileSize * 0.8;
+        if (!isColliding(nx, ny, e.r * 0.5)) validDirs.push(d);
+      }
+      
+      if (validDirs.length > 0) {
+        let bestD = validDirs[0]; const player = S.entities[0];
+        if (e.team === 'B' && player && player.alive && Math.random() < 0.6) {
+          const px = player.x - e.x, py = player.y - e.y;
+          if (Math.abs(px) > Math.abs(py)) bestD = px > 0 ? [1,0] : [-1,0];
+          else bestD = py > 0 ? [0,1] : [0,-1];
+          if (!validDirs.some(d => d[0] === bestD[0] && d[1] === bestD[1])) bestD = validDirs[Math.floor(Math.random() * validDirs.length)];
+        } else bestD = validDirs[Math.floor(Math.random() * validDirs.length)];
+        
+        e.vx = bestD[0]; e.vy = bestD[1]; e.aiTimer = 800 + Math.random() * 800;
+      } else { e.vx = 0; e.vy = 0; e.aiTimer = 300; }
+      
+      const myCx = Math.floor(e.x / tileSize), myCy = Math.floor(e.y / tileSize);
+      let shouldPlant = false;
+      const dirsCheck = [[0,-1], [0,1], [-1,0], [1,0]];
+      for (let d of dirsCheck) {
+        const nx = myCx + d[0], ny = myCy + d[1];
+        if (ny >= 0 && ny < ROWS && nx >= 0 && nx < COLS && S.grid[ny][nx] === 2) shouldPlant = true;
+      }
+      
+      if (shouldPlant && Math.random() < 0.6 && !S.bombs.some(b => b.cx === myCx && b.cy === myCy)) {
+        S.bombs.push({ cx: myCx, cy: myCy, timer: 2.5 }); 
+        const escapeDir = getSafeDirection(e);
+        S.bombs.pop();
+        if (escapeDir) {
+          plantBomb(e);
+          e.aiTimer = 0;
+        }
+      }
+    }
+
+    const step = e.speed * (dt / 16.66); let moved = false;
+    if (e.vx !== 0) { if (!isColliding(e.x + e.vx * step, e.y, e.r * 0.5)) { e.x += e.vx * step; moved = true; } }
+    if (e.vy !== 0) { if (!isColliding(e.x, e.y + e.vy * step, e.r * 0.5)) { e.y += e.vy * step; moved = true; } }
+    
+    if (!moved && (e.vx !== 0 || e.vy !== 0)) {
+      e.vx = 0; e.vy = 0;
+      if (!safeDir) e.aiTimer = 0; 
+    }
+  }
+
+  function updateBombs(dt) {
+    for (let i = S.bombs.length - 1; i >= 0; i--) {
+      const b = S.bombs[i]; b.timer -= (dt / 1000);
+      if (b.timer <= 0) { S.bombs.splice(i, 1); createExplosion(b.cx, b.cy); }
+    }
+  }
+
+  function createExplosion(cx, cy) {
+    const cells = [[cx, cy]]; const dirs = [[0,-1], [0,1], [-1,0], [1,0]];
+    for (let d of dirs) {
+      let nx = cx + d[0], ny = cy + d[1];
+      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+        if (S.grid[ny][nx] === 1) continue; 
+        if (S.grid[ny][nx] === 2) { S.grid[ny][nx] = 0; cells.push([nx, ny]); break; }
+        cells.push([nx, ny]);
+      }
+    }
+    for (let c of cells) S.explosions.push({ cx: c[0], cy: c[1], timer: 0.5 });
+  }
+
+  function updateExplosions(dt) {
+    for (let i = S.explosions.length - 1; i >= 0; i--) {
+      const ex = S.explosions[i]; ex.timer -= (dt / 1000);
+      const exLeft = ex.cx * tileSize, exTop = ex.cy * tileSize;
+      for (let e of S.entities) {
+        if (!e.alive) continue;
+        if (e.x + e.r > exLeft && e.x - e.r < exLeft + tileSize && e.y + e.r > exTop && e.y - e.r < exTop + tileSize) e.alive = false;
+      }
+      if (ex.timer <= 0) S.explosions.splice(i, 1);
+    }
+  }
+
+  function checkWinLose() {
+    const aliveA = S.entities.filter(e => e.team === 'A' && e.alive).length;
+    const aliveB = S.entities.filter(e => e.team === 'B' && e.alive).length;
+    elScoreA.textContent = aliveA; elScoreB.textContent = aliveB;
+    if (aliveA === 0) { endRound('B'); return true; }
+    if (aliveB === 0) { endRound('A'); return true; }
+    return false;
+  }
+
+  function update(dt) {
+    if (!S.running) return;
+    if (S.countdown > 0) { S.countdown -= (dt / 1000); return; }
+    updatePlayer(dt);
+    for (let i = 1; i < 4; i++) updateAI(dt, S.entities[i]);
+    updateBombs(dt); updateExplosions(dt); checkWinLose();
+  }
+
+  function drawEntity(e) {
+    if (!e.alive) return;
+    ctx.save(); ctx.translate(e.x, e.y);
+    ctx.beginPath(); ctx.ellipse(0, e.r*0.6, e.r*0.8, e.r*0.4, 0, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, e.r, 0, Math.PI*2); ctx.fillStyle = e.color; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#000'; ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-e.r*0.3, -e.r*0.2, e.r*0.25, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e.r*0.3, -e.r*0.2, e.r*0.25, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(-e.r*0.3, -e.r*0.2, e.r*0.1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e.r*0.3, -e.r*0.2, e.r*0.1, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold ' + (tileSize*0.4) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(e.name, 0, -e.r - 5);
+    if (e.isPlayer) {
+      ctx.fillStyle = '#ffeb3b'; ctx.beginPath();
+      ctx.moveTo(0, -e.r - tileSize*0.5); ctx.lineTo(-tileSize*0.2, -e.r - tileSize*0.8); ctx.lineTo(tileSize*0.2, -e.r - tileSize*0.8); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.fillStyle = '#2e8b57'; ctx.fillRect(0, 0, W, H);
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const x = c * tileSize, y = r * tileSize;
+        if (S.grid[r][c] === 1) {
+          ctx.fillStyle = '#666'; ctx.fillRect(x, y, tileSize, tileSize);
+          ctx.fillStyle = '#888'; ctx.fillRect(x+2, y+2, tileSize-4, tileSize-4);
+        } else if (S.grid[r][c] === 2) {
+          ctx.fillStyle = '#8B4513'; ctx.fillRect(x+2, y+2, tileSize-4, tileSize-4);
+          ctx.strokeStyle = '#5c2e0d'; ctx.lineWidth = 2; ctx.strokeRect(x+2, y+2, tileSize-4, tileSize-4);
+          ctx.beginPath(); ctx.moveTo(x+2, y+tileSize/2); ctx.lineTo(x+tileSize-2, y+tileSize/2); ctx.stroke();
+        }
+      }
+    }
+    for (let b of S.bombs) {
+      const r = tileSize * 0.35;
+      ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI*2); ctx.fillStyle = (Date.now() % 200 < 100) ? '#333' : '#111'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(b.x, b.y - r); ctx.lineTo(b.x + r*0.5, b.y - r*1.5); ctx.strokeStyle = '#ff9800'; ctx.lineWidth = 3; ctx.stroke();
+    }
+    for (let ex of S.explosions) {
+      const x = ex.cx * tileSize, y = ex.cy * tileSize;
+      ctx.fillStyle = 'rgba(255, 87, 34, 0.8)'; ctx.fillRect(x, y, tileSize, tileSize);
+      ctx.fillStyle = 'rgba(255, 235, 59, 0.6)'; ctx.fillRect(x+4, y+4, tileSize-8, tileSize-8);
+    }
+    for (let e of S.entities) drawEntity(e);
+    if (S.countdown > 0) {
+      ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; ctx.fillRect(0, 0, W, H);
+      let text = S.countdown > 3 ? '3' : S.countdown > 2 ? '2' : S.countdown > 1 ? '1' : '开始！';
+      ctx.fillStyle = text === '开始！' ? '#ff6b35' : '#ffffff';
+      const fontSize = Math.floor(H * 0.25); ctx.font = 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const scale = 1 + 0.05 * Math.sin(Date.now() / 100);
+      ctx.translate(W / 2, H / 2); ctx.scale(scale, scale); ctx.fillText(text, 0, 0); ctx.restore();
+    }
+  }
+
+  function loop(ts) {
+    if (!S.running) return; if (!S.lastTs) S.lastTs = ts;
+    let dt = (ts - S.lastTs); S.lastTs = ts; if (dt > 50) dt = 50;
+    if (!S.paused) update(dt);
+    if (S.running) render();
+    if (S.running) S.raf = requestAnimationFrame(loop);
+  }
+
+  function endRound(winnerTeam) {
+    S.running = false; cancelAnimationFrame(S.raf); render();
+    if (winnerTeam === 'A') S.scoreA++; else S.scoreB++;
+    if (S.scoreA >= 2 || S.scoreB >= 2) {
+      S.isMatchOver = true;
+      elResultTitle.textContent = S.scoreA >= 2 ? '🎉 我方获得最终胜利！' : '😵 敌方获得最终胜利';
+      elResultSub.textContent = `最终大比分：我方 ${S.scoreA} : ${S.scoreB} 敌方`; btnAgain.textContent = '再来一局';
+    } else {
+      S.isMatchOver = false;
+      elResultTitle.textContent = winnerTeam === 'A' ? '🎉 赢下这局！' : '😵 输掉这局';
+      elResultSub.textContent = `当前大比分：我方 ${S.scoreA} : ${S.scoreB} 敌方\n准备开始第 ${S.round + 1} 局`; btnAgain.textContent = '下一局';
+    }
+    overlayResult.classList.remove('hidden');
+    S.input.up = false; S.input.down = false; S.input.left = false; S.input.right = false;
+  }
+
+  function nextRound() {
+    if (S.isMatchOver) start(S.diff); 
+    else {
+      S.round++; S.over = false; S.paused = false; S.countdown = 4.0; S.bombs = []; S.explosions = [];
+      elDiff.textContent = `第 ${S.round} 局`; overlayResult.classList.add('hidden');
+      resize(); initMap(); initEntities(); checkWinLose();
+      S.input.up = false; S.input.down = false; S.input.left = false; S.input.right = false;
+      S.running = true; S.lastTs = 0; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+    }
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff; S.round = 1; S.scoreA = 0; S.scoreB = 0; S.isMatchOver = false;
+    S.over = false; S.paused = false; S.countdown = 4.0; S.bombs = []; S.explosions = [];
+    elDiff.textContent = `第 ${S.round} 局`; overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+    resize(); initMap(); initEntities(); checkWinLose();
+    S.input.up = false; S.input.down = false; S.input.left = false; S.input.right = false;
+    S.running = true; S.lastTs = 0; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+  }
+
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  function resume() { S.paused = false; S.lastTs = 0; overlayPause.classList.add('hidden'); }
+  function stop() { 
+    S.running = false; S.paused = false; S.over = false; S.countdown = 0; 
+    cancelAnimationFrame(S.raf); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden'); 
+    S.input.up = false; S.input.down = false; S.input.left = false; S.input.right = false;
+  }
+
+  window.addEventListener('resize', function () { if (S.running) resize(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { if (S.running) resize(); }, 180); });
+
+  return { start, pause, resume, stop, nextRound, input: S.input };
+})();
+
+/* =========================================================
+   游戏四：黄金矿工
+   ========================================================= */
+const GoldMiner = (function () {
+  'use strict';
+  const canvas = document.getElementById('miner-canvas');
+  const ctx = canvas.getContext('2d');
+  const elDiff = document.getElementById('miner-diff-label');
+  const elScoreTarget = document.getElementById('miner-score-target');
+  const elScoreCurrent = document.getElementById('miner-score-current');
+  const elScoreEnemy = document.getElementById('miner-score-enemy');
+  const overlayPause = document.getElementById('overlay-miner-pause');
+  const overlayResult = document.getElementById('overlay-miner-result');
+  const elResultTitle = document.getElementById('miner-result-title');
+  const elResultSub = document.getElementById('miner-result-sub');
+
+  const DIFF = {
+    easy:   { label: '简单', target: 400, time: 60 },
+    normal: { label: '普通', target: 650, time: 60 },
+    hard:   { label: '困难', target: 900, time: 60 }
+  };
+
+  let W = 0, H = 0, dpr = 1;
+  
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal',
+    targetScore: 650, timeLeft: 60, scoreP1: 0, scoreP2: 0,
+    p1: { x: 0, y: 60, angle: -Math.PI / 2, swingDir: 1, swingSpeed: 0.015, hookLen: 40, minLen: 40, maxLen: 600, speed: 6, state: 'swing', grabbed: null },
+    p2: { x: 0, y: 60, angle: Math.PI / 2, swingDir: -1, swingSpeed: 0.015, hookLen: 40, minLen: 40, maxLen: 600, speed: 6, state: 'swing', grabbed: null, aiTimer: 0 },
+    items: [], raf: null, lastTs: 0
+  };
+
+  function resize() {
+    const stage = canvas.parentElement;
+    let availW = stage.clientWidth - 20;
+    let availH = window.innerHeight * 0.55;
+    
+    if (isNaN(availW) || availW < 100) availW = window.innerWidth - 40;
+
+    const ASPECT = 1.0; 
+    let cw = Math.min(availW, 500);
+    let ch = cw / ASPECT;
+    if (ch > availH) { ch = availH; cw = ch * ASPECT; }
+    
+    W = Math.floor(cw); H = Math.floor(ch);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+    S.p1.x = W * 0.25; S.p2.x = W * 0.75;
+    S.p1.maxLen = Math.hypot(W, H); S.p2.maxLen = Math.hypot(W, H);
+  }
+
+  function spawnItems() {
+    S.items = [];
+    const types = [
+      { type: 'gold_big', color: '#FFD700', r: 25, value: 200, weight: 3 },
+      { type: 'gold_small', color: '#FFD700', r: 15, value: 80, weight: 1.5 },
+      { type: 'rock_big', color: '#888', r: 28, value: 20, weight: 5 },
+      { type: 'rock_small', color: '#888', r: 15, value: 10, weight: 2.5 },
+      { type: 'diamond', color: '#00FFFF', r: 12, value: 500, weight: 1 }
+    ];
+    const count = 15 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < count; i++) {
+      const t = types[Math.floor(Math.random() * types.length)];
+      const x = t.r + 20 + Math.random() * (W - t.r * 2 - 40);
+      const y = 150 + Math.random() * (H - 200 - t.r);
+      S.items.push({ ...t, x, y, isCaught: false });
+    }
+  }
+
+  function updateHook(p, dt) {
+    const ts = dt / 16.66;
+    if (p.state === 'swing') {
+      p.angle += p.swingDir * p.swingSpeed * ts;
+      if (p.angle > Math.PI / 2 - 0.1) p.swingDir = -1;
+      if (p.angle < -Math.PI / 2 + 0.1) p.swingDir = 1;
+      p.hookLen = p.minLen;
+    } 
+    else if (p.state === 'down') {
+      p.hookLen += p.speed * ts;
+      const hx = p.x + Math.sin(p.angle) * p.hookLen, hy = p.y + Math.cos(p.angle) * p.hookLen;
+      for (let item of S.items) {
+        if (item.isCaught) continue;
+        const dist = Math.hypot(item.x - hx, item.y - hy);
+        if (dist < item.r + 10) { item.isCaught = true; p.grabbed = item; p.state = 'up'; break; }
+      }
+      if (p.hookLen > p.maxLen || hx < 0 || hx > W || hy > H) p.state = 'up';
+    } 
+    else if (p.state === 'up') {
+      let speed = p.speed; if (p.grabbed) speed = p.speed * (1 / p.grabbed.weight);
+      p.hookLen -= speed * ts;
+      if (p.hookLen <= p.minLen) {
+        p.hookLen = p.minLen;
+        if (p.grabbed) {
+          if (p === S.p1) S.scoreP1 += p.grabbed.value; else S.scoreP2 += p.grabbed.value;
+          S.items = S.items.filter(i => i !== p.grabbed); p.grabbed = null;
+        }
+        p.state = 'swing';
+      }
+    }
+  }
+
+  function updateAILogic(dt) {
+    if (S.p2.state !== 'swing') return;
+    S.p2.aiTimer -= dt;
+    if (S.p2.aiTimer <= 0) {
+      let shouldDrop = false;
+      const hx = S.p2.x + Math.sin(S.p2.angle) * 150, hy = S.p2.y + Math.cos(S.p2.angle) * 150;
+      for (let item of S.items) {
+        if (item.isCaught) continue;
+        const dist = Math.hypot(item.x - hx, item.y - hy);
+        if (dist < 50 && (item.type.includes('gold') || item.type === 'diamond')) { shouldDrop = true; break; }
+      }
+      if (Math.random() < 0.2) shouldDrop = true;
+      if (shouldDrop) { S.p2.state = 'down'; S.p2.aiTimer = 1000 + Math.random() * 1000; }
+      else S.p2.aiTimer = 100;
+    }
+  }
+
+  function update(dt) {
+    if (!S.running || S.paused) return;
+    S.timeLeft -= (dt / 1000);
+    if (S.timeLeft <= 0) { S.timeLeft = 0; endGame(); return; }
+    elScoreCurrent.textContent = `我方: ${S.scoreP1}`;
+    elScoreEnemy.textContent = `对方: ${S.scoreP2}`;
+    updateHook(S.p1, dt); updateAILogic(dt); updateHook(S.p2, dt);
+  }
+
+  function render() {
+    ctx.fillStyle = '#4a3621'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#87CEEB'; ctx.fillRect(0, 0, W, 120);
+    drawMiner(S.p1, '#333'); drawMiner(S.p2, '#a88bff');
+    for (let item of S.items) { if (item.isCaught) continue; drawItem(item.x, item.y, item); }
+  }
+
+  function drawMiner(p, color) {
+    const hx = p.x + Math.sin(p.angle) * p.hookLen, hy = p.y + Math.cos(p.angle) * p.hookLen;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y + 15); ctx.lineTo(hx, hy); ctx.strokeStyle = '#ddd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.save(); ctx.translate(hx, hy); ctx.rotate(-p.angle);
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI); ctx.strokeStyle = '#666'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+    if (p.grabbed) drawItem(hx, hy, p.grabbed);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(p.x - 15, p.y + 15, 30, 20); 
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p === S.p1 ? '我' : '对方 (AI)', p.x, p.y - 25);
+  }
+
+  function drawItem(x, y, item) {
+    ctx.save(); ctx.translate(x, y); ctx.beginPath();
+    if (item.type === 'diamond') {
+      ctx.moveTo(0, -item.r); ctx.lineTo(item.r, 0); ctx.lineTo(0, item.r); ctx.lineTo(-item.r, 0); ctx.closePath();
+    } else ctx.arc(0, 0, item.r, 0, Math.PI * 2);
+    ctx.fillStyle = item.color; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(-item.r*0.3, -item.r*0.3, item.r*0.2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fill(); ctx.restore();
+  }
+
+  function loop(ts) {
+    if (!S.running) return; if (!S.lastTs) S.lastTs = ts;
+    let dt = (ts - S.lastTs); S.lastTs = ts; if (dt > 50) dt = 50;
+    update(dt); if (S.running) render(); if (S.running) S.raf = requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    S.running = false; cancelAnimationFrame(S.raf); render();
+    let title = '', sub = `我方总金额: ${S.scoreP1}\n对方总金额: ${S.scoreP2}\n目标金额: ${S.targetScore}`;
+    if (S.scoreP1 >= S.targetScore && S.scoreP2 >= S.targetScore) title = '平局！';
+    else if (S.scoreP1 >= S.targetScore) title = '🎉 我方获胜！';
+    else if (S.scoreP2 >= S.targetScore) title = '😵 对方(AI)获胜！';
+    else title = '挑战失败';
+    elResultTitle.textContent = title; elResultSub.textContent = sub; overlayResult.classList.remove('hidden');
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff; S.running = false; S.paused = false; S.over = false;
+    S.targetScore = DIFF[S.diff].target; S.timeLeft = DIFF[S.diff].time; S.scoreP1 = 0; S.scoreP2 = 0;
+    elDiff.textContent = DIFF[S.diff].label; elScoreTarget.textContent = `目标: ${S.targetScore}`; elScoreCurrent.textContent = `我方: 0`; elScoreEnemy.textContent = `对方: 0`;
+    overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+    resize(); spawnItems();
+    S.p1.angle = -Math.PI / 2; S.p1.swingDir = 1; S.p1.state = 'swing'; S.p1.grabbed = null;
+    S.p2.angle = Math.PI / 2; S.p2.swingDir = -1; S.p2.state = 'swing'; S.p2.grabbed = null; S.p2.aiTimer = 1000;
+    S.running = true; S.lastTs = 0; cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+  }
+
+  function dropHook1() { if (S.p1.state === 'swing' && S.running && !S.paused) S.p1.state = 'down'; }
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  function resume() { S.paused = false; S.lastTs = 0; overlayPause.classList.add('hidden'); }
+  function stop() { S.running = false; S.paused = false; S.over = false; cancelAnimationFrame(S.raf); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden'); }
+
+  window.addEventListener('resize', function () { if (S.running) resize(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { if (S.running) resize(); }, 180); });
+  return { start, pause, resume, stop, dropHook1 };
+})();
+
+/* =========================================================
+   游戏五：扫雷对决
+   ========================================================= */
+const Minesweeper = (function () {
+  'use strict';
+  const gridEl = document.getElementById('ms-grid');
+  const elDiff = document.getElementById('ms-diff-label');
+  const elTurnLabel = document.getElementById('ms-turn-label');
+  const overlayPause = document.getElementById('overlay-ms-pause');
+  const overlayResult = document.getElementById('overlay-ms-result');
+  const elResultTitle = document.getElementById('ms-result-title');
+  const elResultSub = document.getElementById('ms-result-sub');
+
+  const ROWS = 8;
+  const COLS = 8;
+
+  const DIFF = {
+    easy:   { label: '简单', mines: 1 },
+    normal: { label: '普通', mines: 2 },
+    hard:   { label: '困难', mines: 3 }
+  };
+
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal',
+    board: [], revealed: 0, totalSafe: 0,
+    turn: 'player',
+    raf: null
+  };
+
+  function initBoard() {
+    const mineCount = DIFF[S.diff].mines;
+    S.board = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => ({ isMine: false, count: 0, revealed: false, revealedBy: null })));
+    S.revealed = 0;
+    S.totalSafe = ROWS * COLS - mineCount;
+    S.turn = 'player';
+    elTurnLabel.textContent = '你的回合';
+    elTurnLabel.style.color = '#fff';
+    
+    let placed = 0;
+    while (placed < mineCount) {
+      const r = Math.floor(Math.random() * ROWS);
+      const c = Math.floor(Math.random() * COLS);
+      if (!S.board[r][c].isMine) {
+        S.board[r][c].isMine = true;
+        placed++;
+      }
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (S.board[r][c].isMine) continue;
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && S.board[nr][nc].isMine) count++;
+          }
+        }
+        S.board[r][c].count = count;
+      }
+    }
+
+    renderBoard();
+  }
+
+  function renderBoard() {
+    gridEl.innerHTML = '';
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+    
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'ms-cell';
+        const data = S.board[r][c];
+        
+        if (data.revealed) {
+          cell.classList.add('revealed');
+          if (data.revealedBy === 'ai') cell.classList.add('ai-revealed');
+          if (data.isMine) {
+            cell.classList.add('mine');
+            cell.textContent = '💥';
+          } else if (data.count > 0) {
+            cell.textContent = data.count;
+            cell.dataset.num = data.count;
+          }
+        }
+        
+        if (!data.revealed && S.turn === 'player' && S.running) {
+          cell.addEventListener('click', () => playerClick(r, c));
+        }
+        
+        gridEl.appendChild(cell);
+      }
+    }
+  }
+
+  function playerClick(r, c) {
+    if (S.turn !== 'player' || S.over || !S.running || S.paused) return;
+    if (S.board[r][c].revealed) return;
+    
+    S.board[r][c].revealed = true;
+    S.board[r][c].revealedBy = 'player';
+    S.revealed++;
+    
+    if (S.board[r][c].isMine) {
+      endGame('ai'); // 踩雷
+    } else {
+      if (S.revealed >= S.totalSafe) { endGame('player'); return; } // 安全区全开完也算赢
+      S.turn = 'ai';
+      elTurnLabel.textContent = '对方回合...';
+      elTurnLabel.style.color = '#ff6b35';
+      renderBoard();
+      setTimeout(aiTurn, 600);
+    }
+  }
+
+  function aiTurn() {
+    if (S.over || !S.running || S.paused || S.turn !== 'ai') return;
+
+    const unrevealed = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!S.board[r][c].revealed) unrevealed.push({r, c});
+      }
+    }
+    
+    if (unrevealed.length === 0) return;
+
+    const target = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+    
+    S.board[target.r][target.c].revealed = true;
+    S.board[target.r][target.c].revealedBy = 'ai';
+    S.revealed++;
+
+    if (S.board[target.r][target.c].isMine) {
+      endGame('player'); // AI 踩雷
+    } else {
+      if (S.revealed >= S.totalSafe) { endGame('ai'); return; }
+      S.turn = 'player';
+      elTurnLabel.textContent = '你的回合';
+      elTurnLabel.style.color = '#fff';
+      renderBoard();
+    }
+  }
+
+  function endGame(winner) {
+    S.running = false; S.over = true;
+    renderBoard();
+    
+    if (winner === 'player') {
+      elResultTitle.textContent = '🎉 对方踩雷，你赢了！';
+    } else {
+      elResultTitle.textContent = '😵 你踩到雷了！';
+    }
+    elResultSub.textContent = `雷区已引爆`;
+    overlayResult.classList.remove('hidden');
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff;
+    S.running = true; S.paused = false; S.over = false;
+    elDiff.textContent = DIFF[S.diff].label;
+    overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+    initBoard();
+  }
+
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  
+  // 修复：恢复时如果轮到AI，重新触发
+  function resume() { 
+    S.paused = false; 
+    overlayPause.classList.add('hidden'); 
+    if (S.running && !S.over && S.turn === 'ai') {
+      setTimeout(aiTurn, 600);
+    }
+  }
+  
+  function stop() { S.running = false; S.paused = false; S.over = false; overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden'); }
+
+  return { start, pause, resume, stop };
+})();
+
+/* =========================================================
+   游戏六：相扑对决
+   ========================================================= */
+const Sumo = (function () {
+  'use strict';
+  const canvas = document.getElementById('sumo-canvas');
+  const ctx = canvas.getContext('2d');
+  const elDiff = document.getElementById('sumo-diff-label');
+  const elTurnLabel = document.getElementById('sumo-turn-label');
+  const overlayPause = document.getElementById('overlay-sumo-pause');
+  const overlayResult = document.getElementById('overlay-sumo-result');
+  const elResultTitle = document.getElementById('sumo-result-title');
+  const elResultSub = document.getElementById('sumo-result-sub');
+
+  let W = 0, H = 0, dpr = 1;
+  let cx = 0, cy = 0, radius = 0;
+
+  const S = {
+    running: false, paused: false, over: false, diff: 'normal',
+    countdown: 3.0,
+    p1: { x: 0, y: 0, vx: 0, vy: 0, r: 20 },
+    p2: { x: 0, y: 0, vx: 0, vy: 0, r: 20 },
+    lastTs: 0, raf: null
+  };
+
+  const DIFF = {
+    easy:   { label: '简单', aiClickRate: 400 },
+    normal: { label: '普通', aiClickRate: 250 },
+    hard:   { label: '困难', aiClickRate: 120 }
+  };
+
+  function resize() {
+    const stage = canvas.parentElement;
+    let availW = stage.clientWidth - 20;
+    let availH = window.innerHeight * 0.6;
+    
+    if (isNaN(availW) || availW < 100) availW = window.innerWidth - 40;
+
+    const ASPECT = 1.0; 
+    let cw = Math.min(availW, 400);
+    let ch = cw / ASPECT;
+    if (ch > availH) { ch = availH; cw = ch * ASPECT; }
+    
+    W = Math.floor(cw); H = Math.floor(ch);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    cx = W / 2; cy = H / 2; radius = Math.min(W, H) * 0.45;
+  }
+
+  function update(dt) {
+    if (!S.running || S.paused || S.over) return;
+    
+    if (S.countdown > 0) {
+      S.countdown -= (dt / 1000);
+      if (S.countdown <= 0) {
+        S.p1.vy = -8;
+        S.p2.vy = 8;
+        elTurnLabel.textContent = '疯狂点击屏幕！';
+      }
+      return;
+    }
+
+    const ts = dt / 16.66;
+
+    S.p1.x += S.p1.vx * ts; S.p1.y += S.p1.vy * ts;
+    S.p2.x += S.p2.vx * ts; S.p2.y += S.p2.vy * ts;
+
+    S.p1.vx *= 0.95; S.p1.vy *= 0.95;
+    S.p2.vx *= 0.95; S.p2.vy *= 0.95;
+
+    const dx = S.p2.x - S.p1.x;
+    const dy = S.p2.y - S.p1.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = S.p1.r + S.p2.r;
+
+    if (dist < minDist) {
+      const nx = dx / (dist || 1);
+      const ny = dy / (dist || 1);
+      const overlap = minDist - dist;
+      S.p1.x -= nx * overlap * 0.5; S.p1.y -= ny * overlap * 0.5;
+      S.p2.x += nx * overlap * 0.5; S.p2.y += ny * overlap * 0.5;
+
+      const p = (S.p1.vx * nx + S.p1.vy * ny) - (S.p2.vx * nx + S.p2.vy * ny);
+      if (p > 0) {
+        S.p1.vx -= p * nx * 0.8; S.p1.vy -= p * ny * 0.8;
+        S.p2.vx += p * nx * 0.8; S.p2.vy += p * ny * 0.8;
+      }
+    }
+
+    const dist1 = Math.hypot(S.p1.x - cx, S.p1.y - cy);
+    if (dist1 > radius) { endGame('p2'); return; }
+    
+    const dist2 = Math.hypot(S.p2.x - cx, S.p2.y - cy);
+    if (dist2 > radius) { endGame('p1'); return; }
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#d2b48c';
+    ctx.fill();
+    ctx.strokeStyle = '#8b4513';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(S.p1.x, S.p1.y, S.p1.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#2196F3';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('我', S.p1.x, S.p1.y);
+
+    ctx.beginPath();
+    ctx.arc(S.p2.x, S.p2.y, S.p2.r, 0, Math.PI * 2);
+    ctx.fillStyle = '#F44336';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillText('对方', S.p2.x, S.p2.y);
+
+    if (S.countdown > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 80px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.ceil(S.countdown), cx, cy);
+    }
+  }
+
+  function loop(ts) {
+    if (!S.running) return; if (!S.lastTs) S.lastTs = ts;
+    let dt = (ts - S.lastTs); S.lastTs = ts; if (dt > 50) dt = 50;
+    update(dt);
+    if (S.running) render();
+    if (S.running) S.raf = requestAnimationFrame(loop);
+  }
+
+  function clickPush(e) {
+    if (!S.running || S.paused || S.over || S.countdown > 0) return;
+    e.preventDefault(); 
+    
+    const dx = S.p2.x - S.p1.x;
+    const dy = S.p2.y - S.p1.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    
+    S.p1.vx += (dx / dist) * 2.5;
+    S.p1.vy += (dy / dist) * 2.5;
+  }
+
+  function aiClick() {
+    if (!S.running || S.paused || S.over) return;
+    if (S.countdown > 0) { setTimeout(aiClick, 200); return; }
+
+    const dx = S.p1.x - S.p2.x;
+    const dy = S.p1.y - S.p2.y;
+    const dist = Math.hypot(dx, dy) || 1;
+
+    S.p2.vx += (dx / dist) * 2.5;
+    S.p2.vy += (dy / dist) * 2.5;
+
+    setTimeout(aiClick, DIFF[S.diff].aiClickRate * (0.8 + Math.random() * 0.4));
+  }
+
+  function endGame(winner) {
+    S.running = false; S.over = true;
+    render();
+    if (winner === 'p1') {
+      elResultTitle.textContent = '🎉 对方被推飞出界，你赢了！';
+    } else {
+      elResultTitle.textContent = '😵 你被推出去了！';
+    }
+    elResultSub.textContent = `相扑大战结束`;
+    overlayResult.classList.remove('hidden');
+  }
+
+  function start(diff) {
+    S.diff = diff || S.diff;
+    S.running = true; S.paused = false; S.over = false;
+    
+    resize();
+    
+    S.countdown = 3.0;
+    S.p1 = { x: cx, y: cy + radius * 0.7, vx: 0, vy: 0, r: radius * 0.15 };
+    S.p2 = { x: cx, y: cy - radius * 0.7, vx: 0, vy: 0, r: radius * 0.15 };
+    
+    elDiff.textContent = DIFF[S.diff].label;
+    elTurnLabel.textContent = '准备...';
+    overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden');
+
+    S.running = true; S.lastTs = 0;
+    cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(loop);
+    setTimeout(aiClick, 3000);
+  }
+
+  function pause() { if (!S.running || S.over) return; S.paused = true; overlayPause.classList.remove('hidden'); }
+  
+  // 修复：恢复时重新启动AI
+  function resume() { 
+    S.paused = false; 
+    overlayPause.classList.add('hidden'); 
+    if (S.running && !S.over) {
+      setTimeout(aiClick, DIFF[S.diff].aiClickRate);
+    }
+  }
+  
+  function stop() { S.running = false; S.paused = false; S.over = false; cancelAnimationFrame(S.raf); overlayPause.classList.add('hidden'); overlayResult.classList.add('hidden'); }
+
+  canvas.addEventListener('pointerdown', clickPush);
+  window.addEventListener('resize', function () { if (S.running) resize(); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { if (S.running) resize(); }, 180); });
+
+  return { start, pause, resume, stop };
+})();
+
+/* =========================================================
+   全局事件绑定与邀请逻辑
+   ========================================================= */
+
+// 点击开始游戏触发背景音乐
+document.getElementById('btn-start').addEventListener('click', () => {
+  BGM.start();
+  showScreen('games');
+});
+
+document.getElementById('games-back').addEventListener('click', () => showScreen('home'));
+
+document.getElementById('card-pong').addEventListener('click', () => showScreen('difficulty'));
+document.getElementById('card-fish').addEventListener('click', () => showScreen('fishDiff'));
+document.getElementById('card-bomber').addEventListener('click', () => showScreen('bomberDiff'));
+document.getElementById('card-miner').addEventListener('click', () => showScreen('minerDiff'));
+document.getElementById('card-ms').addEventListener('click', () => showScreen('msDiff'));
+document.getElementById('card-sumo').addEventListener('click', () => showScreen('sumoDiff'));
+
+// 难度选择
+let selectedDiff = 'normal';
+document.querySelectorAll('#diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedDiff = btn.dataset.diff;
+  });
+});
+
+let selectedFishDiff = 'normal';
+document.querySelectorAll('#fish-diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#fish-diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedFishDiff = btn.dataset.diff;
+  });
+});
+
+let selectedBomberDiff = 'normal';
+document.querySelectorAll('#bomber-diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#bomber-diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedBomberDiff = btn.dataset.diff;
+  });
+});
+
+let selectedMinerDiff = 'normal';
+document.querySelectorAll('#miner-diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#miner-diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedMinerDiff = btn.dataset.diff;
+  });
+});
+
+let selectedMsDiff = 'normal';
+document.querySelectorAll('#ms-diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#ms-diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedMsDiff = btn.dataset.diff;
+  });
+});
+
+let selectedSumoDiff = 'normal';
+document.querySelectorAll('#sumo-diff-options .diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#sumo-diff-options .diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedSumoDiff = btn.dataset.diff;
+  });
+});
+
+// 返回按钮
+document.getElementById('diff-back').addEventListener('click', () => showScreen('games'));
+document.getElementById('fish-back').addEventListener('click', () => showScreen('games'));
+document.getElementById('bomber-back').addEventListener('click', () => showScreen('games'));
+document.getElementById('miner-back').addEventListener('click', () => showScreen('games'));
+document.getElementById('ms-back').addEventListener('click', () => showScreen('games'));
+document.getElementById('sumo-back').addEventListener('click', () => showScreen('games'));
+
+// 开始游戏
+document.getElementById('btn-diff-start').addEventListener('click', () => {
+  showScreen('pong'); setTimeout(() => Pong.start(selectedDiff), 50);
+});
+document.getElementById('btn-fish-start').addEventListener('click', () => {
+  showScreen('fish'); setTimeout(() => Fish.start(selectedFishDiff), 50);
+});
+document.getElementById('btn-bomber-start').addEventListener('click', () => {
+  showScreen('bomber'); setTimeout(() => Bomber.start(selectedBomberDiff), 50);
+});
+document.getElementById('btn-miner-start').addEventListener('click', () => {
+  showScreen('miner'); setTimeout(() => GoldMiner.start(selectedMinerDiff), 50);
+});
+document.getElementById('btn-ms-start').addEventListener('click', () => {
+  showScreen('ms'); setTimeout(() => Minesweeper.start(selectedMsDiff), 50);
+});
+document.getElementById('btn-sumo-start').addEventListener('click', () => {
+  showScreen('sumo'); setTimeout(() => Sumo.start(selectedSumoDiff), 50);
+});
+
+// 游戏内按钮
+document.getElementById('pong-exit').addEventListener('click', () => Pong.pause());
+document.getElementById('btn-resume').addEventListener('click', () => Pong.resume());
+document.getElementById('btn-home').addEventListener('click', () => { Pong.stop(); showScreen('games'); });
+document.getElementById('btn-restart').addEventListener('click', () => Pong.start(selectedDiff));
+document.getElementById('btn-again').addEventListener('click', () => Pong.start(selectedDiff));
+document.getElementById('btn-result-home').addEventListener('click', () => { Pong.stop(); showScreen('games'); });
+
+document.getElementById('fish-exit').addEventListener('click', () => Fish.pause());
+document.getElementById('btn-fish-resume').addEventListener('click', () => Fish.resume());
+document.getElementById('btn-fish-home').addEventListener('click', () => { Fish.stop(); showScreen('games'); });
+document.getElementById('btn-fish-restart').addEventListener('click', () => Fish.start(selectedFishDiff));
+document.getElementById('btn-fish-again').addEventListener('click', () => Fish.start(selectedFishDiff));
+document.getElementById('btn-fish-result-home').addEventListener('click', () => { Fish.stop(); showScreen('games'); });
+
+document.getElementById('bomber-exit').addEventListener('click', () => Bomber.pause());
+document.getElementById('btn-bomber-resume').addEventListener('click', () => Bomber.resume());
+document.getElementById('btn-bomber-home').addEventListener('click', () => { Bomber.stop(); showScreen('games'); });
+document.getElementById('btn-bomber-restart').addEventListener('click', () => Bomber.start(selectedBomberDiff));
+document.getElementById('btn-bomber-result-home').addEventListener('click', () => { Bomber.stop(); showScreen('games'); });
+document.getElementById('btn-bomber-again').addEventListener('click', () => Bomber.nextRound());
+
+document.getElementById('miner-exit').addEventListener('click', () => GoldMiner.pause());
+document.getElementById('btn-miner-resume').addEventListener('click', () => GoldMiner.resume());
+document.getElementById('btn-miner-home').addEventListener('click', () => { GoldMiner.stop(); showScreen('games'); });
+document.getElementById('btn-miner-restart').addEventListener('click', () => GoldMiner.start(selectedMinerDiff));
+document.getElementById('btn-miner-again').addEventListener('click', () => GoldMiner.start(selectedMinerDiff));
+document.getElementById('btn-miner-result-home').addEventListener('click', () => { GoldMiner.stop(); showScreen('games'); });
+document.getElementById('btn-miner-drop-p1').addEventListener('pointerdown', () => GoldMiner.dropHook1());
+
+document.getElementById('ms-exit').addEventListener('click', () => Minesweeper.pause());
+document.getElementById('btn-ms-resume').addEventListener('click', () => Minesweeper.resume());
+document.getElementById('btn-ms-home').addEventListener('click', () => { Minesweeper.stop(); showScreen('games'); });
+document.getElementById('btn-ms-restart').addEventListener('click', () => Minesweeper.start(selectedMsDiff));
+document.getElementById('btn-ms-again').addEventListener('click', () => Minesweeper.start(selectedMsDiff));
+document.getElementById('btn-ms-result-home').addEventListener('click', () => { Minesweeper.stop(); showScreen('games'); });
+
+document.getElementById('sumo-exit').addEventListener('click', () => Sumo.pause());
+document.getElementById('btn-sumo-resume').addEventListener('click', () => Sumo.resume());
+document.getElementById('btn-sumo-home').addEventListener('click', () => { Sumo.stop(); showScreen('games'); });
+document.getElementById('btn-sumo-restart').addEventListener('click', () => Sumo.start(selectedSumoDiff));
+document.getElementById('btn-sumo-again').addEventListener('click', () => Sumo.start(selectedSumoDiff));
+document.getElementById('btn-sumo-result-home').addEventListener('click', () => { Sumo.stop(); showScreen('games'); });
+
+// 炸弹游戏虚拟摇杆控制
+const bomberJoystick = document.getElementById('bomber-joystick');
+const bomberKnob = document.getElementById('bomber-knob');
+let bJoyActive = false;
+let bJoyId = null;
+
+bomberJoystick.addEventListener('pointerdown', (e) => {
+  if (!Bomber.input) return;
+  bJoyActive = true; bJoyId = e.pointerId;
+  bomberJoystick.setPointerCapture(e.pointerId);
+});
+
+bomberJoystick.addEventListener('pointermove', (e) => {
+  if (!bJoyActive || e.pointerId !== bJoyId) return;
+  const rect = bomberJoystick.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  let dx = e.clientX - centerX, dy = e.clientY - centerY;
+  const maxDist = rect.width / 2 - 10;
+  const dist = Math.hypot(dx, dy);
+  if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
+  bomberKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  const threshold = 15;
+  Bomber.input.left = dx < -threshold; Bomber.input.right = dx > threshold;
+  Bomber.input.up = dy < -threshold; Bomber.input.down = dy > threshold;
+});
+
+const resetBomberJoystick = (e) => {
+  if (e && e.pointerId !== bJoyId) return;
+  bJoyActive = false; bJoyId = null;
+  bomberKnob.style.transform = `translate(0px, 0px)`;
+  if (Bomber.input) Bomber.input.left = Bomber.input.right = Bomber.input.up = Bomber.input.down = false;
+};
+
+bomberJoystick.addEventListener('pointerup', resetBomberJoystick);
+bomberJoystick.addEventListener('pointercancel', resetBomberJoystick);
+
+const btnBombPlant = document.getElementById('btn-bomb-plant');
+const setBombTrue = (e) => { if (e.cancelable) e.preventDefault(); Bomber.input.bomb = true; btnBombPlant.classList.add('active'); };
+const setBombFalse = (e) => { if (e.cancelable) e.preventDefault(); Bomber.input.bomb = false; btnBombPlant.classList.remove('active'); };
+btnBombPlant.addEventListener('pointerdown', setBombTrue);
+btnBombPlant.addEventListener('pointerup', setBombFalse);
+btnBombPlant.addEventListener('pointerleave', setBombFalse);
+btnBombPlant.addEventListener('pointercancel', setBombFalse);
+
+
+/* =========================================================
+   共享邀请弹窗逻辑
+   ========================================================= */
+const overlayInvite = document.getElementById('overlay-invite');
+const loadingEl = document.getElementById('invite-loading');
+const successEl = document.getElementById('invite-success');
+const failedEl = document.getElementById('invite-failed');
+let currentInviteGame = 'pong';
+
+function openInviteOverlay(gameType) {
+  currentInviteGame = gameType;
+  overlayInvite.classList.remove('hidden');
+  loadingEl.classList.remove('hidden');
+  successEl.classList.add('hidden');
+  failedEl.classList.add('hidden');
+  setTimeout(() => {
+    if (overlayInvite.classList.contains('hidden')) return;
+    loadingEl.classList.add('hidden');
+    const isSuccess = Math.random() < 0.5; 
+    if (isSuccess) successEl.classList.remove('hidden');
+    else failedEl.classList.remove('hidden');
+  }, 3000); 
+}
+
+document.getElementById('btn-invite').addEventListener('click', () => openInviteOverlay('pong'));
+document.getElementById('btn-invite-fish').addEventListener('click', () => openInviteOverlay('fish'));
+document.getElementById('btn-invite-bomber').addEventListener('click', () => openInviteOverlay('bomber'));
+document.getElementById('btn-invite-miner').addEventListener('click', () => openInviteOverlay('miner'));
+document.getElementById('btn-invite-ms').addEventListener('click', () => openInviteOverlay('ms'));
+document.getElementById('btn-invite-sumo').addEventListener('click', () => openInviteOverlay('sumo'));
+
+document.getElementById('btn-start-multi').addEventListener('click', function () {
+  overlayInvite.classList.add('hidden');
+  if (currentInviteGame === 'pong') { showScreen('pong'); setTimeout(() => Pong.start(selectedDiff), 50); }
+  else if (currentInviteGame === 'fish') { showScreen('fish'); setTimeout(() => Fish.start(selectedFishDiff), 50); }
+  else if (currentInviteGame === 'bomber') { showScreen('bomber'); setTimeout(() => Bomber.start(selectedBomberDiff), 50); }
+  else if (currentInviteGame === 'miner') { showScreen('miner'); setTimeout(() => GoldMiner.start(selectedMinerDiff), 50); }
+  else if (currentInviteGame === 'ms') { showScreen('ms'); setTimeout(() => Minesweeper.start(selectedMsDiff), 50); }
+  else { showScreen('sumo'); setTimeout(() => Sumo.start(selectedSumoDiff), 50); }
+});
+
+document.getElementById('btn-play-solo').addEventListener('click', function () {
+  overlayInvite.classList.add('hidden');
+  if (currentInviteGame === 'pong') { showScreen('pong'); setTimeout(() => Pong.start(selectedDiff), 50); }
+  else if (currentInviteGame === 'fish') { showScreen('fish'); setTimeout(() => Fish.start(selectedFishDiff), 50); }
+  else if (currentInviteGame === 'bomber') { showScreen('bomber'); setTimeout(() => Bomber.start(selectedBomberDiff), 50); }
+  else if (currentInviteGame === 'miner') { showScreen('miner'); setTimeout(() => GoldMiner.start(selectedMinerDiff), 50); }
+  else if (currentInviteGame === 'ms') { showScreen('ms'); setTimeout(() => Minesweeper.start(selectedMsDiff), 50); }
+  else { showScreen('sumo'); setTimeout(() => Sumo.start(selectedSumoDiff), 50); }
+});
+
+document.getElementById('btn-loading-cancel').addEventListener('click', function () {
+  overlayInvite.classList.add('hidden');
+});
+
+document.getElementById('btn-invite-cancel').addEventListener('click', function () {
+  overlayInvite.classList.add('hidden');
+});
+
+/* =========================================================
+   设置功能交互逻辑
+   ========================================================= */
+const overlaySettings = document.getElementById('overlay-settings');
+const toggleBgm = document.getElementById('toggle-bgm');
+const volumeSlider = document.getElementById('volume-slider');
+const customMusicInput = document.getElementById('custom-music');
+
+// 打开设置
+document.getElementById('btn-open-settings').addEventListener('click', () => {
+  overlaySettings.classList.remove('hidden');
+});
+
+// 关闭设置
+document.getElementById('btn-close-settings').addEventListener('click', () => {
+  overlaySettings.classList.add('hidden');
+});
+
+// 播放/暂停开关
+toggleBgm.addEventListener('change', (e) => {
+  BGM.setMute(!e.target.checked);
+});
+
+// 音量调节
+volumeSlider.addEventListener('input', (e) => {
+  const val = parseFloat(e.target.value);
+  BGM.setVolume(val);
+  // 如果玩家拖动了音量条，自动把开关打开
+  if (val > 0 && !toggleBgm.checked) {
+    toggleBgm.checked = true;
+    BGM.setMute(false);
+  }
+});
+
+// 上传自定义音乐
+customMusicInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    BGM.setCustomMusic(file);
+    // 上传后自动开始播放
+    if (!toggleBgm.checked) {
+      toggleBgm.checked = true;
+      BGM.setMute(false);
+    }
+    BGM.start();
+  }
+});
+
+// 恢复默认音乐
+document.getElementById('btn-reset-bgm').addEventListener('click', () => {
+  BGM.resetToDefault();
+  customMusicInput.value = '';
+});
+
+document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (e) {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+
+</script>
+</body>
+</html>
